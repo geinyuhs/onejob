@@ -3,6 +3,7 @@ node_modules/
 
 # Build output
 widget/build/
+widget/focus/build/
 widget/voice/public/
 widget/voice/node_modules/
 dist/

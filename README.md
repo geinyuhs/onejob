@@ -1,3 +1,11 @@
+# onejob
+
+This fork adds a separate voice-first app focused on one important problem.
+See [onejob setup, privacy, and limitations](widget/focus/README.md).
+The original Intaglio Labs documentation follows.
+
+---
+
 # Intaglio Labs
 
 ### Unify your circles, find your people.

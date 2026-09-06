@@ -1,3 +1,16 @@
+## onejob fork — 2026-09-05
+
+The user requested a separate voice-first app built around one active problem.
+`widget/focus/` and `ui/server/focus/` are that app. The inherited local-only
+claims below describe the original Intaglio app, not this separate target.
+onejob sends its active problem, recent conversation, and relevant
+user-added notes through the explicitly selected official Codex or Claude Code
+client when the user presses Send. It never imports the inherited corpus.
+Credentials remain owned by those clients. Codex uses an independent profile;
+Claude Code uses its own native sign-in. No credential copying or symlinks, no
+background inference, and no account actions other than explicit sign-in/out.
+See `widget/focus/README.md` for the exact boundary and provider terms.
+
 # CLAUDE.md
 
 Rules for working in this repository. Read this before the code.

@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<title>onejob</title><link rel="stylesheet" href="../../ui/palette.css"><link rel="stylesheet" href="focus.css"></head>
+<body>
+<header class="f-header"><div class="f-brand"><span class="f-mark">1</span> ONEJOB</div><button id="settings" class="f-quiet">Connect your AI <span>↗</span></button></header>
+<main class="f-layout">
+<section class="f-conversation">
+<div class="f-hero"><div class="f-orb-stage"><button class="orb-btn" id="orb" title="Start voice input" aria-label="Start voice input">
+
+        <span class="orb notify">
+          <span class="orb-body">
+            <span class="orb-layer la"><span class="orb-blob ba"></span></span>
+            <span class="orb-layer lb"><span class="orb-blob bb"></span></span>
+            <span class="orb-layer lc"><span class="orb-blob bc"></span></span>
+            <span class="orb-hl"></span>
+            <span class="blush bl"></span>
+            <span class="blush br"></span>
+          </span>
+          <span class="face">
+
+            <span class="eye el"><svg class="swirl" viewBox="0 0 24 24" aria-hidden="true"><path d="M12.2 12.1 L12.3 12.2 L12.3 12.4 L12.3 12.5 L12.3 12.7 L12.1 12.9 L11.9 13.0 L11.6 13.1 L11.3 13.1 L11.0 13.1 L10.7 12.9 L10.4 12.6 L10.1 12.3 L10.0 11.9 L9.9 11.4 L10.0 10.9 L10.2 10.4 L10.5 9.9 L10.9 9.5 L11.5 9.2 L12.1 9.0 L12.8 9.0 L13.5 9.1 L14.2 9.4 L14.8 9.9 L15.3 10.5 L15.7 11.2 L16.0 12.0 L16.0 12.9 L15.8 13.8 L15.4 14.7 L14.8 15.5 L14.1 16.2 L13.2 16.6 L12.1 16.9 L11.0 17.0 L9.9 16.8 L8.8 16.3 L7.9 15.6 L7.1 14.7 L6.5 13.6 L6.1 12.3 L6.1 11.0 L6.3 9.7 L6.8 8.4 L7.6 7.3 L8.7 6.3 L10.0 5.6 L11.4 5.2 L12.9 5.1 L14.5 5.3 L16.0 5.9 L17.3 6.8 L18.4 8.0 L19.3 9.5 L19.8 11.1 L19.9 12.8 L19.7 14.6 L19.0 16.3 L18.0 17.8 L16.7 19.1 L15.1 20.1 L13.3 20.7 L11.4 20.9 L9.4 20.7 L7.5 20.0"/></svg></span>
+            <span class="eye er"><svg class="swirl" viewBox="0 0 24 24" aria-hidden="true"><path d="M12.2 12.1 L12.3 12.2 L12.3 12.4 L12.3 12.5 L12.3 12.7 L12.1 12.9 L11.9 13.0 L11.6 13.1 L11.3 13.1 L11.0 13.1 L10.7 12.9 L10.4 12.6 L10.1 12.3 L10.0 11.9 L9.9 11.4 L10.0 10.9 L10.2 10.4 L10.5 9.9 L10.9 9.5 L11.5 9.2 L12.1 9.0 L12.8 9.0 L13.5 9.1 L14.2 9.4 L14.8 9.9 L15.3 10.5 L15.7 11.2 L16.0 12.0 L16.0 12.9 L15.8 13.8 L15.4 14.7 L14.8 15.5 L14.1 16.2 L13.2 16.6 L12.1 16.9 L11.0 17.0 L9.9 16.8 L8.8 16.3 L7.9 15.6 L7.1 14.7 L6.5 13.6 L6.1 12.3 L6.1 11.0 L6.3 9.7 L6.8 8.4 L7.6 7.3 L8.7 6.3 L10.0 5.6 L11.4 5.2 L12.9 5.1 L14.5 5.3 L16.0 5.9 L17.3 6.8 L18.4 8.0 L19.3 9.5 L19.8 11.1 L19.9 12.8 L19.7 14.6 L19.0 16.3 L18.0 17.8 L16.7 19.1 L15.1 20.1 L13.3 20.7 L11.4 20.9 L9.4 20.7 L7.5 20.0"/></svg></span>
+          </span>
+          <span class="zzz z1"><i>z</i></span>
+          <span class="zzz z2"><i>z</i></span>
+
+          <span class="orb-thoughts" aria-hidden="true">
+            <i class="thought th1"></i>
+            <i class="thought th2"></i>
+            <i class="thought th3"></i>
+          </span>
+          <span class="orb-badge">1</span>
+
+          <span class="burst"></span>
+        </span>
+      </button></div><div class="f-eyebrow" id="eyebrow">ONE THING. YOUR FULL ATTENTION.</div><h1 id="headline">What’s the one thing<br>you want to change?</h1><p id="subhead">Start wherever you are. We’ll work out the next step together.</p></div>
+<div id="conversation" class="f-messages" aria-live="polite"></div>
+<div class="f-compose-area"><p id="voice-status" class="f-status" role="status">Tap the orb to speak, or write below.</p><form id="composer" class="f-composer"><textarea id="message" rows="2" maxlength="8000" aria-label="Your message" placeholder="The thing on my mind is…"></textarea><div class="f-compose-bar"><button type="button" id="mic" class="f-quiet">◉ Speak</button><button type="button" id="stop" class="f-quiet" hidden>Stop answer</button><button type="submit" id="send" class="f-primary">Start here <span>↑</span></button></div></form><p class="f-fine" id="send-note">Your first problem brief is saved on this Mac.</p></div>
+</section>
+<aside class="f-notebook"><div class="f-notebook-top"><span class="f-eyebrow">YOUR WORKING NOTES</span><span class="f-local">● On this Mac</span></div><div class="f-tabs" role="tablist"><button class="selected" role="tab" aria-selected="true" data-tab="brief">Brief</button><button role="tab" aria-selected="false" data-tab="memory">Memory</button><button role="tab" aria-selected="false" data-tab="context">Context</button></div>
+<section id="brief-pane" class="f-pane"><div id="brief-empty" class="f-empty"><span class="f-paper-icon">↳</span><h2>A place to make sense of it.</h2><p>Your goal, what’s getting in the way, and the next step. Always here when you return.</p><div id="archives"></div></div><form id="brief-form" hidden><p class="f-fine">Edit these notes as your understanding changes.</p><label>What would better look like?<textarea name="outcome" rows="2" maxlength="4000" placeholder="A concrete outcome…"></textarea></label><label>Why it matters<textarea name="why" rows="2" maxlength="4000"></textarea></label><label>Constraints<textarea name="constraints" rows="2" maxlength="4000" placeholder="Time, energy, commitments…"></textarea></label><label>What you’ve tried<textarea name="tried" rows="2" maxlength="4000"></textarea></label><label>Next step<textarea name="nextStep" rows="2" maxlength="4000"></textarea></label><label>The question to resolve<textarea name="openQuestion" rows="2" maxlength="4000"></textarea></label><button class="f-primary" type="submit">Save brief</button><button class="f-quiet" id="archive" type="button">Archive this problem</button></form></section>
+<section id="memory-pane" class="f-pane" hidden><p class="f-fine">Useful recollections, linked to what was actually said. Review suggestions before keeping them.</p><div id="memories"></div></section>
+<section id="context-pane" class="f-pane" hidden><p class="f-fine">Add relevant notes or paste past conversations. Only this problem’s context is used when you send.</p><form id="source-form"><label>Source name<input id="source-title" maxlength="200" required placeholder="For example, notes from Monday"></label><label>Context<textarea id="source-text" rows="6" maxlength="16000" required placeholder="Paste the part that matters…"></textarea></label><button class="f-primary">Add context</button></form><div id="sources"></div><form id="search-form"><label>Find relevant context<input id="search" placeholder="What are you trying to understand?"></label><button class="f-quiet">Search notes</button></form><div id="matches"></div></section>
+<footer class="f-notebook-footer">A little more clarity. One step at a time.</footer></aside></main>
+<dialog id="account-dialog"><div class="f-dialog-head"><h2>Your AI, connected.</h2><button id="close-settings" class="f-quiet" aria-label="Close settings">×</button></div><p>Choose the official client that will receive your problem, recent conversation, and relevant notes when you send.</p><label>AI provider<select id="provider"><option value="chatgpt">ChatGPT via Codex</option><option value="claude">Installed Claude Code</option></select></label><div id="chatgpt-settings"><p id="account-status">Connect through the official Codex sign-in flow.</p><button id="login" class="f-primary">Sign in with ChatGPT</button><button id="logout" class="f-quiet" hidden>Disconnect this app</button><p class="f-fine">Uses your plan’s Codex allowance. A separate profile keeps your normal Codex login untouched. OpenAI’s data settings and limits apply.</p></div><div id="claude-settings" hidden><p>Sign in directly to the unmodified Claude Code app in Terminal. onejob runs that client locally; it never receives your login credentials.</p><button id="claude-login" class="f-primary">Open Claude Code sign-in</button><p class="f-fine">Your own Claude Code account and its billing terms apply. Distributing a product that runs Claude Code requires Anthropic’s applicable commercial terms. This is not Claude.ai sign-in for a third-party app.</p></div><label class="f-toggle"><input type="checkbox" id="spoken" checked> Read replies aloud</label><p class="f-fine">Voice uses on-device macOS speech recognition where available. Audio is not saved. You review the transcript before sending.</p></dialog>
+<dialog id="archive-dialog"><h2>Make room for a new problem?</h2><p>This problem and its notes stay on this Mac. Its context will not be sent with your next problem.</p><button class="f-primary" id="confirm-archive">Archive and start fresh</button><button class="f-quiet" id="cancel-archive">Keep working on this</button></dialog>
+<script src="../../ui/orb-tod.js"></script><script src="focus.js"></script></body></html>

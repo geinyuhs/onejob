@@ -61,9 +61,11 @@
     "model-asset": "model or vendor asset download",
     "user-browser-link": "NOT this program's egress -- a link handed to the owner's own browser",
     "website": "a host the public marketing site in site/ reaches: a subresource the visitor's browser loads, or a link it hands them. Not the product's egress -- no daemon opens these",
-    "loopback": "never leaves the machine"
+    "loopback": "never leaves the machine",
+    "frontier-client": "The installed, unmodified provider client owns its networking and credentials; this is a provider boundary, not an exhaustive inventory of its internal hosts."
   },
   "_the_claim": [
+    "2026-09-05 fork exception: the original Intaglio claims below exclude onejob. On Send, the separate app passes active-problem context to official Codex or Claude Code. No inherited corpus is read. Provider clients own their full network host inventory; the root hosts below identify that boundary.",
     "The narrow claim this system actually keeps, stated once:",
     "HAZLIE SENDS NO CORPUS TEXT TO A CLOUD MODEL. All reasoning and narration",
     "happen locally, on loopback llama-server instances.",
@@ -622,6 +624,56 @@
       "credential": "none of ours -- the owner is signing in to Meta in a window whose cookies are harvested for the bridge; nothing is sent to this host that Meta did not put in the page",
       "decision": "SUBFRAME ONLY, and that distinction is the whole point: fbsbx.com is deliberately absent from allowedHosts, so the window can never NAVIGATE here \u2014 the main frame is where a password is typed. Measured 2026-08-30 as \"blocked-subframe Messenger www.fbsbx.com\", after which the 2FA page sat with a 2.5MB DOM rendering nothing; five theories were spent on that blank page, including a wrong conclusion that Meta refuses embedded webviews outright, before the fence itself was instrumented.",
       "evidence": "connect/lib/bridge.mjs webLogin.allowedFrameHosts for messenger and instagram; ~/.hazlie/logs/bridge-login.log blocked-subframe"
+    },
+    {
+      "host": "auth.openai.com",
+      "kind": "frontier-client",
+      "component": "ui/server/focus/clients.mjs; widget/focus/App.swift",
+      "direction": "user-initiated",
+      "purpose": "Official provider authentication and inference for the separate onejob app",
+      "credential": "Owned by unmodified provider clients; not read by onejob",
+      "decision": "User requested Claude/OpenAI account connection on 2026-09-05. ChatGPT uses documented managed app-server authentication in a separate profile. Claude Code is invoked locally with user-owned native authentication, subject to applicable provider terms. No token extraction, account pooling, or automated background usage.",
+      "evidence": "widget/focus/README.md"
+    },
+    {
+      "host": "chatgpt.com",
+      "kind": "frontier-client",
+      "component": "ui/server/focus/clients.mjs; widget/focus/App.swift",
+      "direction": "user-initiated",
+      "purpose": "Official provider authentication and inference for the separate onejob app",
+      "credential": "Owned by unmodified provider clients; not read by onejob",
+      "decision": "User requested Claude/OpenAI account connection on 2026-09-05. ChatGPT uses documented managed app-server authentication in a separate profile. Claude Code is invoked locally with user-owned native authentication, subject to applicable provider terms. No token extraction, account pooling, or automated background usage.",
+      "evidence": "widget/focus/README.md"
+    },
+    {
+      "host": "api.openai.com",
+      "kind": "frontier-client",
+      "component": "ui/server/focus/clients.mjs; widget/focus/App.swift",
+      "direction": "user-initiated",
+      "purpose": "Official provider authentication and inference for the separate onejob app",
+      "credential": "Owned by unmodified provider clients; not read by onejob",
+      "decision": "User requested Claude/OpenAI account connection on 2026-09-05. ChatGPT uses documented managed app-server authentication in a separate profile. Claude Code is invoked locally with user-owned native authentication, subject to applicable provider terms. No token extraction, account pooling, or automated background usage.",
+      "evidence": "widget/focus/README.md"
+    },
+    {
+      "host": "api.anthropic.com",
+      "kind": "frontier-client",
+      "component": "ui/server/focus/clients.mjs; widget/focus/App.swift",
+      "direction": "user-initiated",
+      "purpose": "Official provider authentication and inference for the separate onejob app",
+      "credential": "Owned by unmodified provider clients; not read by onejob",
+      "decision": "User requested Claude/OpenAI account connection on 2026-09-05. ChatGPT uses documented managed app-server authentication in a separate profile. Claude Code is invoked locally with user-owned native authentication, subject to applicable provider terms. No token extraction, account pooling, or automated background usage.",
+      "evidence": "widget/focus/README.md"
+    },
+    {
+      "host": "claude.ai",
+      "kind": "frontier-client",
+      "component": "ui/server/focus/clients.mjs; widget/focus/App.swift",
+      "direction": "user-initiated",
+      "purpose": "Official provider authentication and inference for the separate onejob app",
+      "credential": "Owned by unmodified provider clients; not read by onejob",
+      "decision": "User requested Claude/OpenAI account connection on 2026-09-05. ChatGPT uses documented managed app-server authentication in a separate profile. Claude Code is invoked locally with user-owned native authentication, subject to applicable provider terms. No token extraction, account pooling, or automated background usage.",
+      "evidence": "widget/focus/README.md"
     }
   ],
   "_loopback": [
