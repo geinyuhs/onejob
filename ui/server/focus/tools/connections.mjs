@@ -30,7 +30,7 @@ export function cleanConnection(input) {
 export class Connections {
   constructor(store) {this.store=store;}
   all() {const row=this.store.db.prepare("SELECT value FROM settings WHERE key='tool-connections'").get();return row?JSON.parse(row.value):[];}
-  public() {return this.all().map(({secretRef,account,...c})=>({...c,hasCredential:!!secretRef}));}
+  public() {return this.all().map(({secretRef,account,...c})=>({...c,hasCredential:!!secretRef||c.auth==='oauth'}));}
   save(input) {const connection=cleanConnection(input);this.write([...this.all(),connection]);return connection;}
   remove(id) {this.write(this.all().filter(c=>c.id!==id));}
   write(items) {this.store.db.prepare("INSERT OR REPLACE INTO settings VALUES ('tool-connections',?)").run(JSON.stringify(items));}

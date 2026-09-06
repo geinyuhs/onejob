@@ -2,7 +2,7 @@ import { ProblemError, requiredText } from './store.mjs';
 import {randomUUID} from 'node:crypto';
 
 export class ProblemService {
-  constructor(store,clients,{folders=null,search=null,tools=null,workspace=null,emit=()=>{}}={}) {this.store=store;this.clients=clients;this.job=null;this.folders=folders;this.search=search;this.tools=tools;this.workspace=workspace;this.emit=emit;}
+  constructor(store,clients,{folders=null,search=null,tools=null,workspace=null,setup=null,emit=()=>{}}={}) {this.store=store;this.clients=clients;this.job=null;this.folders=folders;this.search=search;this.tools=tools;this.workspace=workspace;this.setup=setup;this.emit=emit;}
   snapshot() {const workspacePath=this.workspace?.ensure();return {workspacePath,...this.stateSnapshot()};}
   stateSnapshot() {return {...this.store.snapshot(),provider:this.store.config()?.provider || 'chatgpt',searchMode:this.search?.mode || 'keyword',folderScan:this.folders?.lastScan || null,...(this.tools?.snapshot()||{})};}
   syncFolders() {
@@ -15,8 +15,14 @@ export class ProblemService {
     switch(method) {
       case 'state': return this.snapshot();
       case 'showWorkspace': return {workspaceToOpen:this.workspace.ensure()};
+      case 'setup': return this.setup.inspect();
+      case 'service.connect':
+      case 'aside.connect':
+        if(this.job)throw new ProblemError('Stop the current run before changing connections.');
+        return method==='service.connect'?this.setup.oauth.begin(p.service):this.setup.connectAside(p);
+      case 'service.cancel': this.setup.oauth.cancel(p.service);return {cancelled:true};
       case 'connection.add': if(this.job)throw new ProblemError('Stop the current run before changing connections.');this.tools.connections.save(p);return this.snapshot();
-      case 'connection.remove': if(this.job)throw new ProblemError('Stop the current run before changing connections.');this.tools.connections.remove(p.id);return this.snapshot();
+      case 'connection.remove': if(this.job)throw new ProblemError('Stop the current run before changing connections.');if(this.setup)await this.setup.oauth.disconnect(p.id);else this.tools.connections.remove(p.id);return this.snapshot();
       case 'approval': this.tools.resolve(p.id,p.approved);return {accepted:true};
       case 'create': this.store.create(p.title);return this.snapshot();
       case 'brief': this.store.editBrief(p.brief);return this.snapshot();

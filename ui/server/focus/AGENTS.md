@@ -1,5 +1,11 @@
 # onejob fork
 
+The user requested browser-first setup: detect Aside and its local profiles, reuse
+website sessions, and keep separate service connectors optional. The user confirms
+one browser profile; login/MFA stays in the browser. Optional Notion/Linear OAuth
+uses the official MCP SDK, pinned service origins and local callbacks. OAuth
+credentials belong in macOS Keychain, never SQLite, logs, or model context.
+
 The user also requested automatic Desktop folders. onejob creates Desktop/onejob
 and a separate folder per problem, then indexes only that problem’s folder.
 Previously selected folders remain connected. Never index the Desktop itself.

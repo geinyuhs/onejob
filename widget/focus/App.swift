@@ -51,7 +51,7 @@ final class FocusApp: NSObject, NSApplicationDelegate, WKScriptMessageHandler, W
             worker = Process()
             worker.executableURL = resources.appendingPathComponent("node")
             let workspace = override.map { URL(fileURLWithPath: $0, isDirectory: true).appendingPathComponent("workspace") } ?? FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask)[0].appendingPathComponent("onejob")
-            worker.arguments = [resources.appendingPathComponent("ui/server/focus/main.mjs").path, dataDirectory.path, resources.appendingPathComponent("OnejobSearch").path, workspace.path]
+            worker.arguments = [resources.appendingPathComponent("ui/server/focus/main.mjs").path, dataDirectory.path, resources.appendingPathComponent("OnejobSearch").path, workspace.path, resources.appendingPathComponent("OnejobKeychain").path]
             worker.standardInput = input
             let output = Pipe(); worker.standardOutput = output
             worker.standardError = FileHandle.nullDevice
@@ -109,6 +109,12 @@ final class FocusApp: NSObject, NSApplicationDelegate, WKScriptMessageHandler, W
         case "speak":
             if let text = params["text"] as? String { speech.stopSpeaking(at: .immediate); speech.speak(AVSpeechUtterance(string: String(text.prefix(12000)))) }; done()
         case "stopSpeech": speech.stopSpeaking(at: .immediate); done()
+        case "openAside":
+            NSWorkspace.shared.open(URL(fileURLWithPath: "/Applications/Aside.app")); done()
+        case "openServiceAuth":
+            if let text = params["url"] as? String, let url = NativePolicy.serviceLoginURL(text) {
+                NSWorkspace.shared.open(url); done()
+            } else { emit(["id": id, "error": "Unexpected service sign-in address."]) }
         case "openAuth":
             if let text = params["url"] as? String, let url = NativePolicy.loginURL(text) {
                 NSWorkspace.shared.open(url); done()

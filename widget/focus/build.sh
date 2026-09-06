@@ -18,8 +18,8 @@ cat > "$app_path/Contents/Info.plist" <<'PLIST'
 <key>CFBundleExecutable</key><string>Onejob</string>
 <key>CFBundleIdentifier</key><string>app.onejob.desktop</string>
 <key>CFBundleName</key><string>onejob</string>
-<key>CFBundleVersion</key><string>3</string>
-<key>CFBundleShortVersionString</key><string>0.2.1</string>
+<key>CFBundleVersion</key><string>4</string>
+<key>CFBundleShortVersionString</key><string>0.3.0</string>
 <key>LSMinimumSystemVersion</key><string>14.0</string>
 <key>NSHighResolutionCapable</key><true/>
 <key>NSMicrophoneUsageDescription</key><string>Speak to onejob when you tap the orb. Audio is not saved.</string>
@@ -31,6 +31,7 @@ mkdir -p "$module_cache"
 cat "$repo_root/widget/focus/Policy.swift" "$repo_root/widget/focus/App.swift" > "$module_cache/onejob-main.swift"
 swiftc -target "$(uname -m)-apple-macosx14.0" -module-cache-path "$module_cache" "$module_cache/onejob-main.swift" -o "$app_path/Contents/MacOS/Onejob" -framework AppKit -framework WebKit -framework Speech -framework AVFoundation
 swiftc -target "$(uname -m)-apple-macosx14.0" -module-cache-path "$module_cache" "$repo_root/widget/focus/Search.swift" -o "$app_path/Contents/Resources/OnejobSearch" -framework NaturalLanguage
+swiftc -target "$(uname -m)-apple-macosx14.0" -module-cache-path "$module_cache" "$repo_root/widget/focus/Keychain.swift" -o "$app_path/Contents/Resources/OnejobKeychain" -framework Security
 xattr -cr "$app_path"
 codesign --force --deep --sign - "$app_path"
 printf '%s\n' "$app_path"

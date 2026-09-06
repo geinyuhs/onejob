@@ -1,13 +1,14 @@
 // Only the executor calls this class. No model-facing tool can read credentials.
 export class Credentials {
-  constructor(create=null) {this.create=create;}
+  constructor(create=null,oauth=null) {this.create=create;this.oauth=oauth;}
   async resolve(connection) {
-    if (!connection.secretRef) return '';
+    if (!connection.secretRef && connection.auth!=='oauth') return '';
     try {
+      if(connection.auth==='oauth')return await this.oauth.token(connection);
       const sdk=this.create?null:await import('@1password/sdk');
       const client=await (this.create?this.create(connection.account):sdk.createClient({auth:new sdk.DesktopAuth(connection.account),integrationName:'onejob',integrationVersion:'0.2.0'}));
       return await client.secrets.resolve(connection.secretRef);
-    } catch(error) {const failure=new Error('1Password could not provide the approved credential. Unlock it and enable SDK integration in its Developer settings.');failure.name='CredentialUnavailable';throw failure;}
+    } catch(error) {const failure=new Error(connection.auth==='oauth'?'Reconnect this service in Tools to restore access.':'1Password could not provide the approved credential. Unlock it and enable SDK integration in its Developer settings.');failure.name='CredentialUnavailable';throw failure;}
   }
 }
 export function redact(value,secrets=[]) {

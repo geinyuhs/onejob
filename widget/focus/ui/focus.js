@@ -1,7 +1,7 @@
 /* Native owns IO. Provider and source text are always inserted as text nodes. */
 (() => {
   const $=id=>document.getElementById(id),pending=new Map();
-  let serial=0,state={problem:null,entries:[],provider:'chatgpt'},busy=false,listening=false,approvalId=null;
+  let serial=0,state={problem:null,entries:[],provider:'chatgpt'},busy=false,listening=false,approvalId=null,setupState=null;
   function native(method,params={}) {
     return new Promise((resolve,reject)=>{
       if(!window.webkit?.messageHandlers?.focus){reject(new Error('Open the onejob desktop app to save notes and connect your AI.'));return;}
@@ -21,13 +21,15 @@
     else if(message.event==='accountChanged') refreshAccount();
     else if(message.event==='runProgress') status(message.message);
     else if(message.event==='toolApproval') {approvalId=message.id;$('tool-description').textContent=message.tool+' · '+message.connection+' → '+message.destination;$('tool-notice').textContent=message.notice;$('tool-arguments').textContent=JSON.stringify(message.arguments,null,2)+(message.preview?'\n\nPage excerpt (untrusted content):\n'+message.preview:'');$('approve-tool').disabled=false;$('decline-tool').disabled=false;$('tool-dialog').showModal();status('Waiting for your approval.');}
+    else if(message.event==='setupChanged') {refreshSetup();native('state').then(renderTools).catch(error);}
+    else if(message.event==='setupNotice') status(message.message);
     else if(message.event==='toolProgress') {status(message.status+(message.summary?': '+message.summary:''));if(message.id===approvalId){$('tool-dialog').close();approvalId=null;}native('state').then(renderTools).catch(error);}
     else if(message.event==='contextChanged') {$('matches').replaceChildren();status('Your job folder is up to date.');}
     else if(message.event==='contextUnavailable') status(message.message);
     else {const p=pending.get(message.id);if(p){pending.delete(message.id);message.error?p.reject(new Error(message.error)):p.resolve(message.result);}}
   };
   function node(tag,text,className){const el=document.createElement(tag);if(text!==undefined)el.textContent=text;if(className)el.className=className;return el;}
-  function setBusy(value){busy=value;$('send').disabled=value;$('stop').hidden=!value;$('message').disabled=value;orb(value?'processing':'notify');$('save-connection').disabled=value;if(!value){$('tool-dialog').close();approvalId=null;}}
+  function setBusy(value){busy=value;$('send').disabled=value;$('stop').hidden=!value;$('message').disabled=value;orb(value?'processing':'notify');$('save-connection').disabled=value;$('connect-browser').disabled=value;for(const button of $('service-cards').querySelectorAll?.('button')||[])button.disabled=value;if(!value){$('tool-dialog').close();approvalId=null;}}
   function render(s){
     const changed=state.problem?.id!==s.problem?.id;
     if(changed){$('matches').replaceChildren();$('search-form').reset();$('source-form').reset();}
@@ -51,10 +53,23 @@
     $('folder-status').textContent=s.folderScan?.partial?'Too many files to read. Move some out of your job folder.':s.problem?'Desktop → onejob · Updates automatically.':'Desktop → onejob. Start a problem to get its own folder.';
   }
   function renderTools(s) {
-    $('connections').replaceChildren(...(s.connections||[]).map(c=>{const card=node('article',undefined,'f-card');card.append(node('span',c.kind,'f-tag'),node('p',c.name),node('small',c.url||'Aside local browser controls'));const remove=node('button','Disconnect','f-quiet');remove.disabled=busy;remove.onclick=()=>act('connection.remove',{id:c.id}).then(render).catch(error);card.append(remove);return card;}));
+    $('connections').replaceChildren(...(s.connections||[]).map(c=>{const card=node('article',undefined,'f-card');card.append(node('span',c.kind,'f-tag'),node('p',c.name),node('small',c.url||'Aside local browser controls'));const remove=node('button','Disconnect','f-quiet');remove.disabled=busy;remove.onclick=()=>act('connection.remove',{id:c.id}).then(s=>{render(s);refreshSetup();}).catch(error);card.append(remove);return card;}));
     $('actions').replaceChildren(...(s.actions||[]).map(a=>{const card=node('article',undefined,'f-card');card.append(node('span',a.status,'f-tag'),node('p',a.tool),node('small',a.summary));const details=node('details');details.append(node('summary','Show request'),node('pre',JSON.stringify(a.arguments,null,2)));card.append(details);return card;}));
     if(!s.actions?.length)$('actions').append(node('p','Tool steps will appear here as onejob works.','f-fine'));
   }
+  async function refreshSetup(){
+    try {setupState=await native('setup');const s=setupState;
+      $('browser-status').textContent=s.asideConnection?'Ready. Ask onejob to find what it needs in your signed-in websites.':s.clients.aside?(s.profiles.length?'Aside found. Enable it once below.':'Open an Aside window, then check connections again.'):'Open Aside and enable its CLI in Developer settings.';
+      $('browser-form').hidden=!!s.asideConnection;$('open-aside').hidden=!s.clients.asideApp;
+      $('browser-profile-label').hidden=s.profiles.length<=1;$('browser-profile').replaceChildren(...s.profiles.map(id=>{const option=node('option','Aside profile '+id);option.value=id;return option;}));
+      $('installed-clients').textContent=[s.clients.chatgpt?'Codex detected':null,s.clients.claude?'Claude Code detected':null].filter(Boolean).join(' · ')||'Install Codex or Claude Code to connect your AI.';
+      $('service-cards').replaceChildren(...s.services.map(service=>{const card=node('article',undefined,'f-card');card.append(node('h3',service.name),node('p',service.description),node('small',service.status));
+        const button=node('button',service.status==='connected'?'Reconnect':'Connect','f-quiet');button.disabled=busy||service.status==='awaiting sign-in';button.onclick=async()=>{button.disabled=true;try{const r=await act('service.connect',{service:service.id});await native('openServiceAuth',{url:r.url});await refreshSetup();}catch(err){$('setup-status').textContent=err.message;button.disabled=false;}};card.append(button);
+        if(service.status==='awaiting sign-in'){const cancel=node('button','Cancel sign-in','f-quiet');cancel.onclick=()=>act('service.cancel',{service:service.id}).then(refreshSetup).catch(error);card.append(cancel);}return card;}));
+    }catch(err){$('browser-status').textContent=err.message;}
+  }
+  $('refresh-setup').onclick=refreshSetup;$('open-aside').onclick=()=>fire('openAside');
+  $('browser-form').onsubmit=async event=>{event.preventDefault();try{await act('aside.connect',{profile:$('browser-profile').value||setupState?.profiles[0],privacyConfirmed:$('browser-consent').checked});await refreshSetup();renderTools(await native('state'));}catch(err){$('browser-status').textContent=err.message;}};
   function providerView(){$('chatgpt-settings').hidden=$('provider').value!=='chatgpt';$('claude-settings').hidden=$('provider').value!=='claude';}
   async function refreshAccount(){try{const a=await native('account');$('account-status').textContent=a.connected?'Connected to ChatGPT'+(a.plan?' · '+a.plan:''):'Not connected yet.';$('login').hidden=a.connected;$('logout').hidden=!a.connected;$('settings').textContent=a.connected?'AI connected ↗':'Connect your AI ↗';}catch(e){$('account-status').textContent=e.message;}}
   $('composer').onsubmit=async event=>{
@@ -75,7 +90,7 @@
   $('search-form').onsubmit=e=>{e.preventDefault();act('retrieve',{query:$('search').value}).then(rows=>{$('matches').replaceChildren(...rows.map(row=>{const el=node('article',undefined,'f-card');el.append(node('span',row.title||row.kind,'f-tag'),node('p',row.text),node('small',row.retrieval?.includes('meaning')?'Related meaning'+(row.matched.length?' · '+row.matched.join(', '):''):'Matched: '+row.matched.join(', ')));return el;}));if(!rows.length)$('matches').append(node('p','No matching context yet.','f-empty-small'));}).catch(error);};
   $('open-workspace').onclick=()=>fire('showWorkspace');
   document.querySelectorAll('[data-tab]').forEach(button=>button.onclick=()=>{document.querySelectorAll('[data-tab]').forEach(b=>{b.classList.toggle('selected',b===button);b.setAttribute('aria-selected',String(b===button));$(b.dataset.tab+'-pane').hidden=b!==button;});});
-  $('settings').onclick=()=>{$('account-dialog').showModal();refreshAccount();};$('close-settings').onclick=()=>$('account-dialog').close();
+  $('settings').onclick=()=>{$('account-dialog').showModal();refreshAccount();refreshSetup();};$('close-settings').onclick=()=>$('account-dialog').close();
   $('provider').onchange=()=>act('provider',{provider:$('provider').value}).then(render).catch(e=>{$('provider').value=state.provider;providerView();error(e);});
   $('login').onclick=()=>act('login').then(r=>native('openAuth',{url:r.url})).catch(error);
   $('logout').onclick=()=>act('logout').then(refreshAccount).catch(error);
@@ -89,5 +104,5 @@
   $('approve-tool').onclick=()=>decideTool(true);$('decline-tool').onclick=()=>decideTool(false);$('tool-dialog').oncancel=e=>{e.preventDefault();decideTool(false);};
   $('stop-tool-run').onclick=()=>{fire('stop');$('tool-dialog').close();approvalId=null;};
   $('show-artifacts').onclick=()=>fire('showArtifacts');
-  native('state').then(render).catch(error);
+  native('state').then(s=>{render(s);refreshSetup();}).catch(error);
 })();

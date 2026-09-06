@@ -15,6 +15,8 @@ check(!NativePolicy.trustedPage(URL(fileURLWithPath:"/tmp/other.html"), expected
 check(!NativePolicy.trustedPage(URL(string:"https://example.invalid"), expected:page, mainFrame:true))
 check(NativePolicy.loginURL("https://auth.openai.com/authorize") != nil)
 for url in ["http://auth.openai.com", "https://auth.openai.com.attacker.invalid", "file:///tmp/x", "https://user:secret@chatgpt.com"] { check(NativePolicy.loginURL(url) == nil) }
+check(NativePolicy.serviceLoginURL("https://mcp.notion.com/authorize") != nil)
+for url in ["https://attacker.invalid/authorize", "http://mcp.notion.com/authorize", "https://mcp.notion.com:444/authorize", "https://user:secret@mcp.linear.app/authorize", "https://mcp.linear.app/authorize#bad"] { check(NativePolicy.serviceLoginURL(url) == nil) }
 check(NativePolicy.mayRecord(authorized:true,microphone:true,available:true,onDevice:true,sampleRate:48000,channels:1))
 check(!NativePolicy.mayRecord(authorized:false,microphone:true,available:true,onDevice:true,sampleRate:48000,channels:1))
 check(!NativePolicy.mayRecord(authorized:true,microphone:false,available:true,onDevice:true,sampleRate:48000,channels:1))
@@ -29,6 +31,7 @@ test('native trust, login, and recording policy fires; each broken policy fails'
   [source,0],
   [source.replace('mainFrame && url?.isFileURL == true && url?.standardizedFileURL == expected?.standardizedFileURL','true'),1],
   [source.replace('else { return nil }','else { return URL(string:"https://chatgpt.com") }'),1],
+  [source.replace('["mcp.notion.com", "mcp.linear.app"]','["mcp.notion.com", "mcp.linear.app", "attacker.invalid"]'),1],
   ...['authorized && ','microphone && ','available && ','onDevice && ','sampleRate > 0 && ',' && channels > 0'].map(part=>[source.replace(part,''),1]),
  ];
  for(const [code,expected] of variants){

@@ -67,3 +67,12 @@ test('automatic folder needs no connection card; existing manual folders remain 
  assert.equal(f.get('folders').children.length,1);assert.equal(f.get('folders').children[0].children[0].textContent,'Selected notes');
  f.get('open-workspace').onclick();assert.equal(f.posts.at(-1).method,'showWorkspace');
 });
+
+test('browser-first setup detects one profile without requesting per-service connections',async()=>{
+ const f=await fixture();assert.equal(f.posts.at(-1).method,'setup');
+ await f.respond({clients:{aside:true,asideApp:true,chatgpt:true},profiles:['u0'],services:[]});
+ assert.equal(f.get('browser-profile-label').hidden,true);f.get('browser-consent').checked=true;
+ const task=f.get('browser-form').onsubmit({preventDefault(){}});assert.equal(f.posts.at(-1).method,'aside.connect');assert.equal(f.posts.at(-1).params.profile,'u0');assert.equal(f.posts.at(-1).params.privacyConfirmed,true);
+ await f.respond({});await f.respond({clients:{aside:true,asideApp:true},profiles:['u0'],services:[],asideConnection:'synthetic-browser'});await f.respond({...f.state,connections:[]});await task;
+ assert.equal(f.get('browser-form').hidden,true);assert.ok(!f.posts.some(p=>p.method==='service.connect'));
+});

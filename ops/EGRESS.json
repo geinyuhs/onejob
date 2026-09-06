@@ -67,6 +67,7 @@
   },
   "_the_claim": [
     "2026-09-05 fork exception: the original Intaglio claims below exclude onejob. On Send, the separate app passes active-problem context to official Codex or Claude Code. No inherited corpus is read. Selected-folder indexing stays local, using existing readers, SQLite FTS5, and a network-denied macOS embedding helper. No hosted memory or embedding service is used. Provider clients own their full network host inventory; the root hosts below identify that boundary.",
+    "onejob browser-first setup detects installed clients and local Aside profile IDs without reading pages. Optional Notion/Linear OAuth uses the official MCP SDK and each service origin directly for discovery, dynamic client registration and token exchange/refresh. The callback listens on a random 127.0.0.1 port for one state-bound response. OAuth credentials are local non-synchronizing Keychain items. No integration broker or Docker is required. Browser sign-in pages retain their own service networking; this is not an inventory of their redirects or subresources.",
     "2026-09-05 onejob tool extension: the user authorized direct APIs, MCP and Aside, without Docker. User-configured origins cannot be enumerated by this literal-host scanner. The executor pins API/MCP origins and asks for each external action. MCP operators receive approved inputs and may forward them. Aside CLI controls task tabs; browser websites, subresources, redirects, sync and telemetry remain governed by Aside and user settings. The app asks users to disable Aside analytics/sync but does not audit its traffic. The official 1Password desktop SDK owns its service networking; onejob only resolves a user-configured reference after action approval. These are explicit boundaries, not a claim of zero third-party egress.",
     "The narrow claim this system actually keeps, stated once:",
     "HAZLIE SENDS NO CORPUS TEXT TO A CLOUD MODEL. All reasoning and narration",
@@ -686,6 +687,26 @@
       "credential": "none",
       "decision": "User requested reuse of existing tools without Docker; dependency installation is a source build step.",
       "evidence": "ui/server/focus/package-lock.json"
+    },
+    {
+      "host": "mcp.notion.com",
+      "kind": "api",
+      "component": "ui/server/focus/tools/presets.mjs",
+      "direction": "bidirectional",
+      "purpose": "Notion first-party OAuth discovery, registration, sign-in, refresh, and approved MCP operations",
+      "credential": "OAuth tokens in macOS Keychain; supplied to executor outside model context",
+      "decision": "User requested automatic setup and optional direct connections; sign-in and workspace permissions require the user in the service browser flow. Browser access is the default.",
+      "evidence": "ui/server/focus/tools/oauth.mjs and widget/focus/Policy.swift"
+    },
+    {
+      "host": "mcp.linear.app",
+      "kind": "api",
+      "component": "ui/server/focus/tools/presets.mjs",
+      "direction": "bidirectional",
+      "purpose": "Linear first-party OAuth discovery, registration, sign-in, refresh, and approved MCP operations",
+      "credential": "OAuth tokens in macOS Keychain; supplied to executor outside model context",
+      "decision": "User requested automatic setup and optional direct connections; sign-in and workspace permissions require the user in the service browser flow. Browser access is the default.",
+      "evidence": "ui/server/focus/tools/oauth.mjs and widget/focus/Policy.swift"
     }
   ],
   "_loopback": [

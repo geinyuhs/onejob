@@ -111,10 +111,36 @@ uses an ephemeral thread and read-only sandbox. The shared onejob loop interpret
 JSON tool requests and enforces reviews; this is not native provider function
 calling. There is no background worker or arbitrary shell/JavaScript tool.
 
-In **Tools → Add a connection**:
+The default **Tools** screen detects Aside and local profile IDs. Enable one
+profile to reuse websites already signed in there. The agent prefers browser
+context over asking for a separate connector for each site. Chrome/Safari
+sessions are not imported. onejob does not control the entire desktop. Users
+complete normal password-manager autofill, unlock, login, and MFA prompts in Aside;
+onejob never asks the model to retrieve those secrets. The browser permission is
+remembered, while each external operation still requires its own review.
 
-- **Aside:** install its CLI through Developer settings, open the desired profile,
-  and enter its account ID if needed. Review its privacy settings and disable
+**Advanced → direct connections** contains optional Notion and Linear sign-in
+cards. onejob uses the official MCP SDK for dynamic client registration, PKCE,
+a single-use state-bound loopback callback, and token refresh. Users authorize
+the workspace/account in the service's own browser flow. There is no shared
+OAuth broker. Metadata, token exchange, and registration stay on the preset's
+origin; unexpected recipients and HTTP redirects are rejected. Tokens, refresh
+tokens and client registration details live in non-synchronizing macOS Keychain
+items scoped to this onejob install. If Keychain is unavailable, there is no
+plaintext fallback. Each refresh is shared across concurrent requests to avoid
+rotating the same token twice. Expired authorization prompts a reconnect; a tool
+operation is never automatically replayed after an authentication error.
+
+Disconnect deletes this app's local credential and connection. It does not revoke
+the service-side grant; users can revoke that in the service's account settings.
+Reconnecting replaces the local connection after successful authorization. These
+flows were tested with the real SDK against synthetic OAuth responses and local
+callbacks, not by granting access to a real personal workspace.
+
+Inside **Advanced → Custom API or MCP**:
+
+- **Aside:** install its CLI through Developer settings and open the desired profile.
+  The main setup detects profile IDs; a choice is needed only when several exist. Review its privacy settings and disable
   analytics and browser/vault sync before enabling this connection. onejob uses
   browser controls through `aside mcp`, not an Aside AI conversation. Aside and
   visited sites still control their own traffic, cookies, subresources, redirects,
@@ -129,7 +155,7 @@ In **Tools → Add a connection**:
   operator receives requests and may forward them elsewhere; a first-party or
   self-controlled server is a trust choice, not something onejob can verify.
 
-For authenticated API/MCP connections, enable SDK integration in 1Password's
+For custom bearer-token API/MCP connections, enable SDK integration in 1Password's
 Developer settings. Enter the account name and an `op://vault/item/field`
 reference, never the credential itself. The official SDK requests desktop
 approval and resolves just that reference when an approved operation runs.
@@ -147,8 +173,9 @@ within that run. Inspect the service before trying again.
 
 No Docker, Nango, Composio, or hosted memory broker is required. Dependencies are
 the official MCP SDK (protocol/transport support) and 1Password SDK (desktop
-credential authorization). OAuth account provisioning, non-bearer authentication,
-and persistent browser sessions across app restarts are not implemented.
+credential authorization). Automatic OAuth setup is currently limited to the Notion and Linear presets.
+Other service-specific OAuth flows, non-bearer custom authentication, and
+persistent task-tab handles across app restarts are not implemented.
 
 ## Limits
 
