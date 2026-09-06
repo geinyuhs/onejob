@@ -22,7 +22,7 @@
     else if(message.event==='runProgress') status(message.message);
     else if(message.event==='toolApproval') {approvalId=message.id;$('tool-description').textContent=message.tool+' · '+message.connection+' → '+message.destination;$('tool-notice').textContent=message.notice;$('tool-arguments').textContent=JSON.stringify(message.arguments,null,2)+(message.preview?'\n\nPage excerpt (untrusted content):\n'+message.preview:'');$('approve-tool').disabled=false;$('decline-tool').disabled=false;$('tool-dialog').showModal();status('Waiting for your approval.');}
     else if(message.event==='toolProgress') {status(message.status+(message.summary?': '+message.summary:''));if(message.id===approvalId){$('tool-dialog').close();approvalId=null;}native('state').then(renderTools).catch(error);}
-    else if(message.event==='contextChanged') {$('matches').replaceChildren();status('Your folder context has changed. Refresh Context to see the updates. The latest version will be used on Send.');}
+    else if(message.event==='contextChanged') {$('matches').replaceChildren();status('Your job folder is up to date.');}
     else if(message.event==='contextUnavailable') status(message.message);
     else {const p=pending.get(message.id);if(p){pending.delete(message.id);message.error?p.reject(new Error(message.error)):p.resolve(message.result);}}
   };
@@ -47,9 +47,8 @@
     if(!memories.length)$('memories').append(node('p','As you talk, useful memories will appear here for you to review.','f-empty-small'));
     $('sources').replaceChildren(...s.entries.filter(e=>e.kind==='source').map(e=>{const card=node('details',undefined,'f-card');card.append(node('summary',e.title),node('p',e.text));return card;}));
     $('archives').replaceChildren(...(s.archives||[]).map(e=>{const b=node('button','Resume: '+e.title,'f-quiet');b.onclick=()=>act('restore',{id:e.id}).then(render).catch(error);return b;}));
-    $('folders').replaceChildren(...(s.folders||[]).map(folder=>{const card=node('div',undefined,'f-card');card.append(node('p',folder.label));const remove=node('button','Stop syncing and forget imports','f-quiet');remove.onclick=()=>act('disconnectFolder',{id:folder.id}).then(s=>{$('matches').replaceChildren();render(s);}).catch(error);card.append(remove);return card;}));
-    $('folder-status').textContent=s.folderScan?.partial?'Scan incomplete. Choose a smaller folder.':s.folderScan?`Last scanned ${new Date(s.folderScan.at).toLocaleTimeString()}. Search: ${s.searchMode}.`:'Folder indexing stays on this Mac.';
-    $('choose-folder').disabled=!s.problem;
+    $('folders').replaceChildren(...(s.folders||[]).filter(folder=>folder.label!==('Job-'+s.problem?.id)).map(folder=>{const card=node('div',undefined,'f-card');card.append(node('p',folder.label));const remove=node('button','Stop syncing and forget imports','f-quiet');remove.onclick=()=>act('disconnectFolder',{id:folder.id}).then(s=>{$('matches').replaceChildren();render(s);}).catch(error);card.append(remove);return card;}));
+    $('folder-status').textContent=s.folderScan?.partial?'Too many files to read. Move some out of your job folder.':s.problem?'Desktop → onejob · Updates automatically.':'Desktop → onejob. Start a problem to get its own folder.';
   }
   function renderTools(s) {
     $('connections').replaceChildren(...(s.connections||[]).map(c=>{const card=node('article',undefined,'f-card');card.append(node('span',c.kind,'f-tag'),node('p',c.name),node('small',c.url||'Aside local browser controls'));const remove=node('button','Disconnect','f-quiet');remove.disabled=busy;remove.onclick=()=>act('connection.remove',{id:c.id}).then(render).catch(error);card.append(remove);return card;}));
@@ -72,10 +71,9 @@
   $('orb').onclick=toggleVoice;$('mic').onclick=toggleVoice;
   $('stop').onclick=()=>fire('stop');
   $('brief-form').onsubmit=e=>{e.preventDefault();const brief=Object.fromEntries(new FormData(e.target));act('brief',{brief}).then(s=>{render(s);status('Brief saved.');}).catch(error);};
-  $('source-form').onsubmit=e=>{e.preventDefault();act('source',{title:$('source-title').value,text:$('source-text').value}).then(s=>{render(s);e.target.reset();status('Context saved to this problem.');}).catch(error);};
+  $('source-form').onsubmit=e=>{e.preventDefault();act('source',{title:'Added note',text:$('source-text').value}).then(s=>{render(s);e.target.reset();status('Context saved to this problem.');}).catch(error);};
   $('search-form').onsubmit=e=>{e.preventDefault();act('retrieve',{query:$('search').value}).then(rows=>{$('matches').replaceChildren(...rows.map(row=>{const el=node('article',undefined,'f-card');el.append(node('span',row.title||row.kind,'f-tag'),node('p',row.text),node('small',row.retrieval?.includes('meaning')?'Related meaning'+(row.matched.length?' · '+row.matched.join(', '):''):'Matched: '+row.matched.join(', ')));return el;}));if(!rows.length)$('matches').append(node('p','No matching context yet.','f-empty-small'));}).catch(error);};
-  $('choose-folder').onclick=()=>act('chooseFolder').then(result=>{if(!result.cancelled)render(result);}).catch(error);
-  $('refresh-folders').onclick=()=>act('scanFolders').then(s=>{$('matches').replaceChildren();render(s);}).catch(error);
+  $('open-workspace').onclick=()=>fire('showWorkspace');
   document.querySelectorAll('[data-tab]').forEach(button=>button.onclick=()=>{document.querySelectorAll('[data-tab]').forEach(b=>{b.classList.toggle('selected',b===button);b.setAttribute('aria-selected',String(b===button));$(b.dataset.tab+'-pane').hidden=b!==button;});});
   $('settings').onclick=()=>{$('account-dialog').showModal();refreshAccount();};$('close-settings').onclick=()=>$('account-dialog').close();
   $('provider').onchange=()=>act('provider',{provider:$('provider').value}).then(render).catch(e=>{$('provider').value=state.provider;providerView();error(e);});

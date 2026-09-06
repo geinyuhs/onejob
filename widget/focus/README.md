@@ -25,8 +25,11 @@ still needs notarization. Include Node's license alongside any bundled runtime.
 ## What works
 
 - One active problem, an editable brief, and a persistent local SQLite store.
-- Pasted context and explicitly selected local folders, scoped to the active
-  problem. Folder changes refresh every 30 seconds while the app is running,
+- A Desktop/onejob folder created automatically at launch, with a separate
+  Job folder for each problem. Open the current folder from Context and drop
+  notes there. No folder picker or connection setup is required. Existing
+  selected folders remain available under Browse context. Changes refresh every
+  30 seconds while the app is running,
   and immediately before search or Send.
 - Hybrid retrieval: SQLite FTS5 ranked text search plus macOS NaturalLanguage
   sentence embeddings. The embedding helper is denied network access. If its
@@ -81,13 +84,14 @@ The app does not import the original Intaglio corpus or other conversations.
 Mail, calendar and websites can be accessed through connections you configure
 and operations you review. Existing personal browser tabs are not attached
 automatically. It never searches the whole computer. There is no hosted memory
-service, external embedding API, or analytics SDK in this target. See `ops/EGRESS.json` for
+service, external embedding API, or analytics SDK in this target. Desktop files follow your existing macOS/iCloud sync settings. See `ops/EGRESS.json` for
 the provider, browser, and configured-service networking boundaries.
 
 **Local state:** `~/Library/Application Support/onejob/` holds the SQLite
 store and the separate Codex profile. The directory is created with mode 0700;
 the SQLite file is mode 0600. This is filesystem protection, not database
-encryption. `ONEJOB_DATA` can select a separate directory for development.
+encryption. `ONEJOB_DATA` can select a separate directory for development; its automatic
+workspace stays inside that directory rather than the real Desktop.
 Forget excludes memory from future retrieval; archive keeps notes on disk.
 Neither is a claim of erasure from provider systems or secure disk wiping.
 Folder paths stay in the local database; excerpt titles include folder and file
@@ -153,7 +157,7 @@ plain text, TeX, CSV, and TSV; skips hidden/known credential paths, links, binar
 files, and cloud placeholders; and does not trigger cloud downloads. It reads
 files up to 256 KiB, retains at most 20,000 characters per file, and splits them
 into 5,000-character excerpts. A scan exceeding 200 visited files blocks search
-and Send until a smaller folder is chosen or the folder is disconnected.
+and Send until some files are moved out of that folder.
 
 Meaning search currently uses English, the first 2,000 characters of each
 excerpt, and up to 1,000 recent eligible entries. Retrieval quality is not

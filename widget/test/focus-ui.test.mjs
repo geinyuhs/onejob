@@ -60,3 +60,10 @@ test('tool approval displays inert text and requires one deliberate click',()=>a
 test('mutation proof: automatic approval fails the UI approval test',async()=>{
  await assert.rejects(approvalScenario(source.replace("approvalId=message.id;", "approvalId=message.id;fire('approval',{id:message.id,approved:true});")),/must not approve/);
 });
+
+test('automatic folder needs no connection card; existing manual folders remain manageable',async()=>{
+ const f=await fixture();f.get('source-text').value='Synthetic note';f.get('source-form').onsubmit({preventDefault(){},target:f.get('source-form')});
+ await f.respond({...f.state,folders:[{id:'auto',label:'Job-synthetic-a'},{id:'manual',label:'Selected notes'}]});
+ assert.equal(f.get('folders').children.length,1);assert.equal(f.get('folders').children[0].children[0].textContent,'Selected notes');
+ f.get('open-workspace').onclick();assert.equal(f.posts.at(-1).method,'showWorkspace');
+});

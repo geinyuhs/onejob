@@ -1,5 +1,9 @@
 ## onejob fork — 2026-09-05
 
+The user also requested automatic Desktop folders. onejob creates Desktop/onejob
+and a separate folder per problem, then indexes only that problem’s folder.
+Previously selected folders remain connected. Never index the Desktop itself.
+
 The user requested a separate voice-first app built around one active problem.
 `widget/focus/` and `ui/server/focus/` are that app. The inherited local-only
 claims below describe the original Intaglio app, not this separate target.

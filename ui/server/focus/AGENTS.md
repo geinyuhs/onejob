@@ -1,5 +1,9 @@
 # onejob fork
 
+The user also requested automatic Desktop folders. onejob creates Desktop/onejob
+and a separate folder per problem, then indexes only that problem’s folder.
+Previously selected folders remain connected. Never index the Desktop itself.
+
 The user requested this separate voice-first problem-solving app on 2026-09-05.
 This directory owns a separate SQLite store, not the inherited context corpus.
 An explicitly selected official provider client may receive the active problem,

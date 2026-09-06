@@ -50,7 +50,8 @@ final class FocusApp: NSObject, NSApplicationDelegate, WKScriptMessageHandler, W
             try FileManager.default.createDirectory(at: dataDirectory, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
             worker = Process()
             worker.executableURL = resources.appendingPathComponent("node")
-            worker.arguments = [resources.appendingPathComponent("ui/server/focus/main.mjs").path, dataDirectory.path, resources.appendingPathComponent("OnejobSearch").path]
+            let workspace = override.map { URL(fileURLWithPath: $0, isDirectory: true).appendingPathComponent("workspace") } ?? FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask)[0].appendingPathComponent("onejob")
+            worker.arguments = [resources.appendingPathComponent("ui/server/focus/main.mjs").path, dataDirectory.path, resources.appendingPathComponent("OnejobSearch").path, workspace.path]
             worker.standardInput = input
             let output = Pipe(); worker.standardOutput = output
             worker.standardError = FileHandle.nullDevice
@@ -74,7 +75,12 @@ final class FocusApp: NSObject, NSApplicationDelegate, WKScriptMessageHandler, W
             let line = outputBuffer.prefix(upTo: newline); outputBuffer.removeSubrange(...newline)
             do {
                 let value = try JSONSerialization.jsonObject(with: line) as? [String: Any] ?? [:]
-                DispatchQueue.main.async { self.emit(value) }
+                DispatchQueue.main.async {
+                    if let result = value["result"] as? [String: Any], let path = result["workspaceToOpen"] as? String {
+                        NSWorkspace.shared.open(URL(fileURLWithPath: path, isDirectory: true))
+                    }
+                    self.emit(value)
+                }
             } catch { DispatchQueue.main.async { self.emit(["event": "error", "message": "The local service returned an unreadable response."]) } }
         }
     }
@@ -92,19 +98,6 @@ final class FocusApp: NSObject, NSApplicationDelegate, WKScriptMessageHandler, W
         let params = body["params"] as? [String: Any] ?? [:]
         func done(_ result: Any = [:]) { emit(["id": id, "result": result]) }
         switch method {
-        case "chooseFolder":
-            let picker = NSOpenPanel()
-            picker.canChooseDirectories = true; picker.canChooseFiles = false; picker.allowsMultipleSelection = false
-            picker.message = "Only this folder will be indexed. Relevant excerpts may be sent to your selected Claude Code or Codex client when you send a message."
-            picker.prompt = "Use for this job"
-            picker.beginSheetModal(for: window) { response in
-                if response == .OK, let url = picker.url {
-                    do {
-                        var data = try JSONSerialization.data(withJSONObject: ["id":id,"method":"connectFolder","params":["path":url.path]])
-                        data.append(10); try self.input.fileHandleForWriting.write(contentsOf: data)
-                    } catch let error { _ = error; self.emit(["id":id,"error":"The folder could not be connected."]) }
-                } else { self.emit(["id":id,"result":["cancelled":true]]) }
-            }
         case "showArtifacts":
             do {
                 let folder = dataDirectory.appendingPathComponent("artifacts")

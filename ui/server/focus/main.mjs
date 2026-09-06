@@ -5,19 +5,21 @@ import { ProblemService } from './service.mjs';
 import { CodexClient, ClaudeClient } from './clients.mjs';
 import { FolderContext } from './folders.mjs';
 import { ContextSearch,localRanker } from './search.mjs';
+import {JobWorkspace} from './workspace.mjs';
 import {ToolRuntime} from './tools/runtime.mjs';
 
 const directory=resolve(process.argv[2]);
 const store=new ProblemStore(join(directory,'problem.sqlite'));
 const codex=new CodexClient(directory);
+const workspace=new JobWorkspace(store,process.argv[4]||join(directory,'workspace'));
 const write=value=>process.stdout.write(JSON.stringify(value)+'\n');
 const folders=new FolderContext(store),search=new ContextSearch(store,localRanker(process.argv[3]));
 const runtime=new ToolRuntime(store,directory,{search,emit:write,sync:()=>service.syncFolders()});
-const service=new ProblemService(store,{chatgpt:codex,claude:new ClaudeClient(join(directory,'claude-workspace'))},{folders,search,tools:runtime,emit:write});
+const service=new ProblemService(store,{chatgpt:codex,claude:new ClaudeClient(join(directory,'claude-workspace'))},{folders,search,tools:runtime,workspace,emit:write});
 codex.on('notification',message=>{if(['account/login/completed','account/updated'].includes(message.method))write({event:'accountChanged'});});
 const scanTimer=setInterval(()=>{
   try { const scan=service.syncFolders();if(scan?.changed)write({event:'contextChanged'}); }
-  catch(error) { write({event:'contextUnavailable',message:'Folder context needs attention. Refresh it in Context before sending.'}); }
+  catch(error) { write({event:'contextUnavailable',message:'Your job folder needs attention. Open it from Context before sending.'}); }
 },30000);
 scanTimer.unref();
 createInterface({input:process.stdin}).on('line',async line=>{

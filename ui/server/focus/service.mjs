@@ -2,16 +2,19 @@ import { ProblemError, requiredText } from './store.mjs';
 import {randomUUID} from 'node:crypto';
 
 export class ProblemService {
-  constructor(store,clients,{folders=null,search=null,tools=null,emit=()=>{}}={}) {this.store=store;this.clients=clients;this.job=null;this.folders=folders;this.search=search;this.tools=tools;this.emit=emit;}
-  snapshot() {return {...this.store.snapshot(),provider:this.store.config()?.provider || 'chatgpt',searchMode:this.search?.mode || 'keyword',folderScan:this.folders?.lastScan || null,...(this.tools?.snapshot()||{})};}
+  constructor(store,clients,{folders=null,search=null,tools=null,workspace=null,emit=()=>{}}={}) {this.store=store;this.clients=clients;this.job=null;this.folders=folders;this.search=search;this.tools=tools;this.workspace=workspace;this.emit=emit;}
+  snapshot() {const workspacePath=this.workspace?.ensure();return {workspacePath,...this.stateSnapshot()};}
+  stateSnapshot() {return {...this.store.snapshot(),provider:this.store.config()?.provider || 'chatgpt',searchMode:this.search?.mode || 'keyword',folderScan:this.folders?.lastScan || null,...(this.tools?.snapshot()||{})};}
   syncFolders() {
+    this.workspace?.ensure();
     const scan=this.folders?.sync();
-    if (scan?.partial) throw new ProblemError('This folder is too large for a complete scan. Choose a smaller folder before searching or sending.');
+    if (scan?.partial) throw new ProblemError('This folder is too large for a complete scan. Move some files out of the job folder before searching or sending.');
     return scan;
   }
   async call(method,p={}) {
     switch(method) {
       case 'state': return this.snapshot();
+      case 'showWorkspace': return {workspaceToOpen:this.workspace.ensure()};
       case 'connection.add': if(this.job)throw new ProblemError('Stop the current run before changing connections.');this.tools.connections.save(p);return this.snapshot();
       case 'connection.remove': if(this.job)throw new ProblemError('Stop the current run before changing connections.');this.tools.connections.remove(p.id);return this.snapshot();
       case 'approval': this.tools.resolve(p.id,p.approved);return {accepted:true};
