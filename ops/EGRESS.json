@@ -65,7 +65,7 @@
     "frontier-client": "The installed, unmodified provider client owns its networking and credentials; this is a provider boundary, not an exhaustive inventory of its internal hosts."
   },
   "_the_claim": [
-    "2026-09-05 fork exception: the original Intaglio claims below exclude onejob. On Send, the separate app passes active-problem context to official Codex or Claude Code. No inherited corpus is read. Provider clients own their full network host inventory; the root hosts below identify that boundary.",
+    "2026-09-05 fork exception: the original Intaglio claims below exclude onejob. On Send, the separate app passes active-problem context to official Codex or Claude Code. No inherited corpus is read. Selected-folder indexing stays local, using existing readers, SQLite FTS5, and a network-denied macOS embedding helper. No hosted memory or embedding service is used. Provider clients own their full network host inventory; the root hosts below identify that boundary.",
     "The narrow claim this system actually keeps, stated once:",
     "HAZLIE SENDS NO CORPUS TEXT TO A CLOUD MODEL. All reasoning and narration",
     "happen locally, on loopback llama-server instances.",

@@ -4,11 +4,14 @@ The user requested a separate voice-first app built around one active problem.
 `widget/focus/` and `ui/server/focus/` are that app. The inherited local-only
 claims below describe the original Intaglio app, not this separate target.
 onejob sends its active problem, recent conversation, and relevant
-user-added notes through the explicitly selected official Codex or Claude Code
+user-added notes and selected-folder excerpts through the explicitly selected official Codex or Claude Code
 client when the user presses Send. It never imports the inherited corpus.
 Credentials remain owned by those clients. Codex uses an independent profile;
 Claude Code uses its own native sign-in. No credential copying or symlinks, no
 background inference, and no account actions other than explicit sign-in/out.
+User-selected folders may be indexed and refreshed locally every 30 seconds.
+Reuse the local file readers, SQLite FTS5, and macOS NaturalLanguage; no hosted
+memory or embedding services. The embedding helper must deny network access.
 See `widget/focus/README.md` for the exact boundary and provider terms.
 
 # Scope — the Intaglio Labs assistant track

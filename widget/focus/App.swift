@@ -50,7 +50,7 @@ final class FocusApp: NSObject, NSApplicationDelegate, WKScriptMessageHandler, W
             try FileManager.default.createDirectory(at: dataDirectory, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
             worker = Process()
             worker.executableURL = resources.appendingPathComponent("node")
-            worker.arguments = [resources.appendingPathComponent("ui/server/focus/main.mjs").path, dataDirectory.path]
+            worker.arguments = [resources.appendingPathComponent("ui/server/focus/main.mjs").path, dataDirectory.path, resources.appendingPathComponent("OnejobSearch").path]
             worker.standardInput = input
             let output = Pipe(); worker.standardOutput = output
             worker.standardError = FileHandle.nullDevice
@@ -92,6 +92,19 @@ final class FocusApp: NSObject, NSApplicationDelegate, WKScriptMessageHandler, W
         let params = body["params"] as? [String: Any] ?? [:]
         func done(_ result: Any = [:]) { emit(["id": id, "result": result]) }
         switch method {
+        case "chooseFolder":
+            let picker = NSOpenPanel()
+            picker.canChooseDirectories = true; picker.canChooseFiles = false; picker.allowsMultipleSelection = false
+            picker.message = "Only this folder will be indexed. Relevant excerpts may be sent to your selected Claude Code or Codex client when you send a message."
+            picker.prompt = "Use for this job"
+            picker.beginSheetModal(for: window) { response in
+                if response == .OK, let url = picker.url {
+                    do {
+                        var data = try JSONSerialization.data(withJSONObject: ["id":id,"method":"connectFolder","params":["path":url.path]])
+                        data.append(10); try self.input.fileHandleForWriting.write(contentsOf: data)
+                    } catch let error { _ = error; self.emit(["id":id,"error":"The folder could not be connected."]) }
+                } else { self.emit(["id":id,"result":["cancelled":true]]) }
+            }
         case "startListening": startListening(); done()
         case "stopListening": stopListening(); done()
         case "speak":

@@ -1,8 +1,13 @@
 import { ProblemError, requiredText } from './store.mjs';
 
 export class ProblemService {
-  constructor(store,clients) {this.store=store;this.clients=clients;this.job=null;}
-  snapshot() {return {...this.store.snapshot(),provider:this.store.config()?.provider || 'chatgpt'};}
+  constructor(store,clients,{folders=null,search=null}={}) {this.store=store;this.clients=clients;this.job=null;this.folders=folders;this.search=search;}
+  snapshot() {return {...this.store.snapshot(),provider:this.store.config()?.provider || 'chatgpt',searchMode:this.search?.mode || 'keyword',folderScan:this.folders?.lastScan || null};}
+  syncFolders() {
+    const scan=this.folders?.sync();
+    if (scan?.partial) throw new ProblemError('This folder is too large for a complete scan. Choose a smaller folder before searching or sending.');
+    return scan;
+  }
   async call(method,p={}) {
     switch(method) {
       case 'state': return this.snapshot();
@@ -12,7 +17,10 @@ export class ProblemService {
       case 'restore': this.store.restore(p.id);return this.snapshot();
       case 'source': this.store.add('source',p.text,{title:requiredText(p.title,200)});this.store.advance();return this.snapshot();
       case 'memory': this.store.decide(p.id,p.action);return this.snapshot();
-      case 'retrieve': return this.store.retrieve(requiredText(p.query,2000));
+      case 'connectFolder': this.folders.connect(p.path);return this.snapshot();
+      case 'scanFolders': this.syncFolders();return this.snapshot();
+      case 'disconnectFolder': this.folders.disconnect(p.id);return this.snapshot();
+      case 'retrieve': this.syncFolders();return (this.search || this.store).retrieve(requiredText(p.query,2000));
       case 'provider':
         if(!['chatgpt','claude'].includes(p.provider)) throw new ProblemError('Unknown provider.');
         if(this.job) throw new ProblemError('Stop the current answer before changing providers.');
@@ -29,8 +37,10 @@ export class ProblemService {
   async send(text) {
     if(this.job) throw new ProblemError('An answer is already running. Stop it before sending another.');
     text=requiredText(text,8000);
+    this.syncFolders();
     this.store.requireActive();this.store.add('user',text);const problem=this.store.advance();
     const context=this.store.context(text);
+    if (this.search) context.evidence=this.search.retrieve(`${text} ${problem.title} ${problem.brief.openQuestion}`);
     const sources=[...context.evidence,...context.recent.filter(e=>e.kind==='user')];
     const controller=new AbortController();this.job=controller;
     try {

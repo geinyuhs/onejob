@@ -26,7 +26,18 @@ export class ProblemStore {
       CREATE TABLE IF NOT EXISTS entries(id TEXT PRIMARY KEY, problem_id TEXT NOT NULL REFERENCES problems(id),
         kind TEXT NOT NULL, text TEXT NOT NULL, title TEXT NOT NULL DEFAULT '', source_id TEXT,
         quote TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'confirmed', created TEXT NOT NULL);
-      CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY, value TEXT NOT NULL);`);
+      CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY, value TEXT NOT NULL);
+      CREATE VIRTUAL TABLE IF NOT EXISTS entry_search USING fts5(title,text,content='entries',content_rowid='rowid',tokenize='porter unicode61');
+      CREATE TRIGGER IF NOT EXISTS entry_search_insert AFTER INSERT ON entries BEGIN
+        INSERT INTO entry_search(rowid,title,text) VALUES(new.rowid,new.title,new.text); END;
+      CREATE TRIGGER IF NOT EXISTS entry_search_delete AFTER DELETE ON entries BEGIN
+        INSERT INTO entry_search(entry_search,rowid,title,text) VALUES('delete',old.rowid,old.title,old.text); END;
+      CREATE TRIGGER IF NOT EXISTS entry_search_update AFTER UPDATE OF title,text ON entries BEGIN
+        INSERT INTO entry_search(entry_search,rowid,title,text) VALUES('delete',old.rowid,old.title,old.text);
+        INSERT INTO entry_search(rowid,title,text) VALUES(new.rowid,new.title,new.text); END;
+      CREATE TABLE IF NOT EXISTS folders(id TEXT PRIMARY KEY,problem_id TEXT NOT NULL REFERENCES problems(id),path TEXT NOT NULL,label TEXT NOT NULL,UNIQUE(problem_id,path));
+      CREATE TABLE IF NOT EXISTS folder_entries(entry_id TEXT PRIMARY KEY REFERENCES entries(id) ON DELETE CASCADE,folder_id TEXT NOT NULL REFERENCES folders(id) ON DELETE CASCADE,file TEXT NOT NULL,digest TEXT NOT NULL);
+      INSERT INTO entry_search(entry_search) VALUES('rebuild');`);
   }
   close() { this.db.close(); }
   config() { const row = this.db.prepare("SELECT value FROM settings WHERE key='model'").get(); return row ? JSON.parse(row.value) : null; }
@@ -35,7 +46,8 @@ export class ProblemStore {
   snapshot() {
     const problem = this.active();
     const entries = problem ? this.db.prepare('SELECT * FROM entries WHERE problem_id=? ORDER BY created,rowid').all(problem.id) : [];
-    return { problem, entries, archives: this.db.prepare('SELECT id,title,created FROM problems WHERE active=0 ORDER BY created DESC').all() };
+    const folders = problem ? this.db.prepare('SELECT id,label FROM folders WHERE problem_id=?').all(problem.id) : [];
+    return { problem, entries, folders, archives: this.db.prepare('SELECT id,title,created FROM problems WHERE active=0 ORDER BY created DESC').all() };
   }
   create(title) {
     title = requiredText(title, 500);
@@ -77,23 +89,26 @@ export class ProblemStore {
     const p = this.requireActive();
     const row = this.db.prepare('SELECT * FROM entries WHERE id=? AND problem_id=?').get(id,p.id);
     if (!row || !['fact','belief','hypothesis','attempt','decision'].includes(row.kind)) throw new ProblemError('Memory not found.',404);
+    if (row.status==='forgotten') throw new ProblemError('Memory not found.',404);
     this.db.prepare('UPDATE entries SET status=? WHERE id=?').run(action === 'confirm' ? 'confirmed' : 'forgotten',id);
     this.advance();
   }
-  retrieve(query, limit = 8) {
+  candidates() {
     const p = this.requireActive();
+    return this.db.prepare("SELECT * FROM entries WHERE problem_id=? AND status!='forgotten' AND kind!='assistant' ORDER BY created DESC LIMIT 1000").all(p.id);
+  }
+  retrieve(query, limit = 8) {
     const tokens = words(query);
-    const rows = this.db.prepare("SELECT * FROM entries WHERE problem_id=? AND status!='forgotten' AND kind!='assistant' ORDER BY created DESC").all(p.id);
-    return rows.map(row => {
-      const haystack = words(`${row.title} ${row.text}`);
-      const matches = tokens.filter(w => haystack.includes(w));
-      return { ...row, score: matches.length / Math.sqrt(Math.max(1,haystack.length)), matched: matches };
-    }).filter(row => row.matched.length > 0).sort((a,b) => b.score-a.score).slice(0,limit);
+    const allowed = new Map(this.candidates().map(row => [row.id,row]));
+    if (!tokens.length) return [];
+    const match = tokens.slice(0,40).map(token => '"'+token+'"').join(' OR ');
+    return this.db.prepare('SELECT entries.id,bm25(entry_search,2,1) AS rank FROM entry_search JOIN entries ON entries.rowid=entry_search.rowid WHERE entry_search MATCH ? ORDER BY rank').all(match)
+      .filter(row => allowed.has(row.id)).slice(0,limit).map(row => ({...allowed.get(row.id),score:-row.rank,matched:tokens.filter(t => words(allowed.get(row.id).text+' '+allowed.get(row.id).title).includes(t)),retrieval:'keyword'}));
   }
   context(utterance) {
     const { problem, entries } = this.snapshot();
     const evidence = this.retrieve(`${utterance} ${problem.title} ${problem.brief.openQuestion}`);
-    const recent = entries.filter(e => ['user','assistant'].includes(e.kind)).slice(-12);
+    const recent = entries.filter(e => ['user','assistant'].includes(e.kind) && e.status === 'confirmed').slice(-12);
     return { problem, evidence, recent };
   }
   applyResult(problemId, revision, result, allowedSources) {
