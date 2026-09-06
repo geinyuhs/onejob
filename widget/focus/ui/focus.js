@@ -1,7 +1,7 @@
 /* Native owns IO. Provider and source text are always inserted as text nodes. */
 (() => {
   const $=id=>document.getElementById(id),pending=new Map();
-  let serial=0,state={problem:null,entries:[],provider:'chatgpt'},busy=false,listening=false;
+  let serial=0,state={problem:null,entries:[],provider:'chatgpt'},busy=false,listening=false,approvalId=null;
   function native(method,params={}) {
     return new Promise((resolve,reject)=>{
       if(!window.webkit?.messageHandlers?.focus){reject(new Error('Open the onejob desktop app to save notes and connect your AI.'));return;}
@@ -19,20 +19,23 @@
     else if(message.event==='speech') {orb(message.speaking?'talking':'notify');}
     else if(message.event==='error') error(new Error(message.message));
     else if(message.event==='accountChanged') refreshAccount();
+    else if(message.event==='runProgress') status(message.message);
+    else if(message.event==='toolApproval') {approvalId=message.id;$('tool-description').textContent=message.tool+' · '+message.connection+' → '+message.destination;$('tool-notice').textContent=message.notice;$('tool-arguments').textContent=JSON.stringify(message.arguments,null,2)+(message.preview?'\n\nPage excerpt (untrusted content):\n'+message.preview:'');$('approve-tool').disabled=false;$('decline-tool').disabled=false;$('tool-dialog').showModal();status('Waiting for your approval.');}
+    else if(message.event==='toolProgress') {status(message.status+(message.summary?': '+message.summary:''));if(message.id===approvalId){$('tool-dialog').close();approvalId=null;}native('state').then(renderTools).catch(error);}
     else if(message.event==='contextChanged') {$('matches').replaceChildren();status('Your folder context has changed. Refresh Context to see the updates. The latest version will be used on Send.');}
     else if(message.event==='contextUnavailable') status(message.message);
     else {const p=pending.get(message.id);if(p){pending.delete(message.id);message.error?p.reject(new Error(message.error)):p.resolve(message.result);}}
   };
   function node(tag,text,className){const el=document.createElement(tag);if(text!==undefined)el.textContent=text;if(className)el.className=className;return el;}
-  function setBusy(value){busy=value;$('send').disabled=value;$('stop').hidden=!value;$('message').disabled=value;orb(value?'processing':'notify');}
+  function setBusy(value){busy=value;$('send').disabled=value;$('stop').hidden=!value;$('message').disabled=value;orb(value?'processing':'notify');$('save-connection').disabled=value;if(!value){$('tool-dialog').close();approvalId=null;}}
   function render(s){
     const changed=state.problem?.id!==s.problem?.id;
     if(changed){$('matches').replaceChildren();$('search-form').reset();$('source-form').reset();}
-    state=s;document.body.classList.toggle('has-problem',!!s.problem);
+    state=s;renderTools(s);document.body.classList.toggle('has-problem',!!s.problem);
     $('brief-empty').hidden=!!s.problem;$('brief-form').hidden=!s.problem;
     $('source-form').querySelector('button').disabled=!s.problem;
     $('send').firstChild.textContent=s.problem?'Send ':'Start here ';
-    $('send-note').textContent=s.problem?`Sending shares this problem, recent conversation, and relevant notes or folder excerpts with ${s.provider==='claude'?'your Claude Code client':'OpenAI through Codex'}.`:'Your first problem brief is saved on this Mac.';
+    $('send-note').textContent=s.problem?`Sending shares this problem, recent conversation, and relevant notes or folder excerpts with ${s.provider==='claude'?'your Claude Code client':'OpenAI through Codex'}. External tool actions require your review.`:'Your first problem brief is saved on this Mac.';
     $('provider').value=s.provider;providerView();
     if(s.problem){$('headline').textContent=s.problem.title;$('eyebrow').textContent='YOUR ONE THING';for(const [key,value]of Object.entries(s.problem.brief)){$('brief-form').elements.namedItem(key).value=value;}}
     else {$('headline').replaceChildren(node('span','What’s the one thing'),node('br'),node('span','you want to change?'));$('eyebrow').textContent='ONE THING. YOUR FULL ATTENTION.';}
@@ -47,6 +50,11 @@
     $('folders').replaceChildren(...(s.folders||[]).map(folder=>{const card=node('div',undefined,'f-card');card.append(node('p',folder.label));const remove=node('button','Stop syncing and forget imports','f-quiet');remove.onclick=()=>act('disconnectFolder',{id:folder.id}).then(s=>{$('matches').replaceChildren();render(s);}).catch(error);card.append(remove);return card;}));
     $('folder-status').textContent=s.folderScan?.partial?'Scan incomplete. Choose a smaller folder.':s.folderScan?`Last scanned ${new Date(s.folderScan.at).toLocaleTimeString()}. Search: ${s.searchMode}.`:'Folder indexing stays on this Mac.';
     $('choose-folder').disabled=!s.problem;
+  }
+  function renderTools(s) {
+    $('connections').replaceChildren(...(s.connections||[]).map(c=>{const card=node('article',undefined,'f-card');card.append(node('span',c.kind,'f-tag'),node('p',c.name),node('small',c.url||'Aside local browser controls'));const remove=node('button','Disconnect','f-quiet');remove.disabled=busy;remove.onclick=()=>act('connection.remove',{id:c.id}).then(render).catch(error);card.append(remove);return card;}));
+    $('actions').replaceChildren(...(s.actions||[]).map(a=>{const card=node('article',undefined,'f-card');card.append(node('span',a.status,'f-tag'),node('p',a.tool),node('small',a.summary));const details=node('details');details.append(node('summary','Show request'),node('pre',JSON.stringify(a.arguments,null,2)));card.append(details);return card;}));
+    if(!s.actions?.length)$('actions').append(node('p','Tool steps will appear here as onejob works.','f-fine'));
   }
   function providerView(){$('chatgpt-settings').hidden=$('provider').value!=='chatgpt';$('claude-settings').hidden=$('provider').value!=='claude';}
   async function refreshAccount(){try{const a=await native('account');$('account-status').textContent=a.connected?'Connected to ChatGPT'+(a.plan?' · '+a.plan:''):'Not connected yet.';$('login').hidden=a.connected;$('logout').hidden=!a.connected;$('settings').textContent=a.connected?'AI connected ↗':'Connect your AI ↗';}catch(e){$('account-status').textContent=e.message;}}
@@ -77,5 +85,11 @@
   $('archive').onclick=()=>$('archive-dialog').showModal();$('cancel-archive').onclick=()=>$('archive-dialog').close();
   $('confirm-archive').onclick=()=>act('archive').then(s=>{$('archive-dialog').close();render(s);status('Ready for your next important problem.');}).catch(error);
   $('spoken').onchange=()=>{if(!$('spoken').checked)fire('stopSpeech');};
+  $('connection-kind').onchange=()=>{const aside=$('connection-kind').value==='aside';$('aside-fields').hidden=!aside;$('service-fields').hidden=aside;};
+  $('connection-form').onsubmit=async e=>{e.preventDefault();try {const kind=$('connection-kind').value;const s=await act('connection.add',{kind,name:$('connection-name').value,url:$('connection-url').value,account:kind==='aside'?$('aside-account').value:$('credential-account').value,secretRef:kind==='aside'?'':$('credential-reference').value,localBrowserOnly:$('aside-local').checked});render(s);$('connection-status').textContent='Configuration saved. Access will be tested when you approve the first tool action.';}catch(err){$('connection-status').textContent=err.message;}};
+  function decideTool(approved){const id=approvalId;if(!id)return;$('approve-tool').disabled=true;$('decline-tool').disabled=true;act('approval',{id,approved}).then(()=>{$('tool-dialog').close();approvalId=null;}).catch(error);}
+  $('approve-tool').onclick=()=>decideTool(true);$('decline-tool').onclick=()=>decideTool(false);$('tool-dialog').oncancel=e=>{e.preventDefault();decideTool(false);};
+  $('stop-tool-run').onclick=()=>{fire('stop');$('tool-dialog').close();approvalId=null;};
+  $('show-artifacts').onclick=()=>fire('showArtifacts');
   native('state').then(render).catch(error);
 })();

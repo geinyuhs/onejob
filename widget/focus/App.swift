@@ -105,6 +105,12 @@ final class FocusApp: NSObject, NSApplicationDelegate, WKScriptMessageHandler, W
                     } catch let error { _ = error; self.emit(["id":id,"error":"The folder could not be connected."]) }
                 } else { self.emit(["id":id,"result":["cancelled":true]]) }
             }
+        case "showArtifacts":
+            do {
+                let folder = dataDirectory.appendingPathComponent("artifacts")
+                try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+                NSWorkspace.shared.open(folder); done()
+            } catch let error { _ = error; emit(["id":id,"error":"Could not open the documents folder."]) }
         case "startListening": startListening(); done()
         case "stopListening": stopListening(); done()
         case "speak":

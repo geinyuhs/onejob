@@ -33,7 +33,7 @@ test('mutation proof: foreign semantic IDs cannot pass the retrieval boundary',a
 test('mutation proof: folder protections fail when removed',async t=>{
  const f=fixture(t),base=fileURLToPath(new URL('../../',import.meta.url));
  const target=join(f.dir,'copy');mkdirSync(join(target,'ui/server'),{recursive:true});mkdirSync(join(target,'connectors/lib'),{recursive:true});
- cpSync(join(base,'ui/server/focus'),join(target,'ui/server/focus'),{recursive:true});
+ cpSync(join(base,'ui/server/focus'),join(target,'ui/server/focus'),{recursive:true,filter:path=>!path.includes('/node_modules')});
  for(const name of ['fileWalk.mjs','fileText.mjs'])cpSync(join(base,'connectors/lib',name),join(target,'connectors/lib',name));
  const path=join(target,'ui/server/focus/folders.mjs');
  const original=readFileSync(path,'utf8');
@@ -54,7 +54,7 @@ test('mutation proof: folder protections fail when removed',async t=>{
 test('mutation proof: incomplete scans cannot dispatch and removed evidence cannot recur',async t=>{
  const f=fixture(t),base=fileURLToPath(new URL('../../',import.meta.url));
  const target=join(f.dir,'copy');mkdirSync(join(target,'ui/server'),{recursive:true});
- cpSync(join(base,'ui/server/focus'),join(target,'ui/server/focus'),{recursive:true});
+ cpSync(join(base,'ui/server/focus'),join(target,'ui/server/focus'),{recursive:true,filter:path=>!path.includes('/node_modules')});
  const servicePath=join(target,'ui/server/focus/service.mjs');
  writeFileSync(servicePath,readFileSync(servicePath,'utf8').replace('if (scan?.partial)', 'if (false)'));
  const {ProblemService:Broken}=await import(pathToFileURL(servicePath));

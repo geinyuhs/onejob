@@ -35,7 +35,7 @@ const cases=[
 ];
 for(const [name,file,before,after,pattern]of cases)test('mutation proof: '+name,t=>{
  const dir=mkdtempSync(join(tmpdir(),'focus-mutant-'));t.after(()=>rmSync(dir,{recursive:true,force:true}));
- const target=join(dir,'ui/server/focus');mkdirSync(join(dir,'ui/test'),{recursive:true});cpSync(source,target,{recursive:true});
+ const target=join(dir,'ui/server/focus');mkdirSync(join(dir,'ui/test'),{recursive:true});cpSync(source,target,{recursive:true,filter:path=>!path.includes('/node_modules')});
  cpSync(fileURLToPath(new URL('focus-store.test.mjs',import.meta.url)),join(dir,'ui/test/focus-store.test.mjs'));
  const path=join(target,file),text=readFileSync(path,'utf8');assert.ok(text.includes(before),'mutation still addresses live code');writeFileSync(path,text.replace(before,after));
  const run=spawnSync(process.execPath,['--test','--test-timeout=2000','--test-name-pattern='+pattern,join(dir,'ui/test/focus-store.test.mjs')],{encoding:'utf8',timeout:5000,env:{...process.env,NODE_TEST_CONTEXT:undefined}});

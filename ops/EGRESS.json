@@ -62,10 +62,12 @@
     "user-browser-link": "NOT this program's egress -- a link handed to the owner's own browser",
     "website": "a host the public marketing site in site/ reaches: a subresource the visitor's browser loads, or a link it hands them. Not the product's egress -- no daemon opens these",
     "loopback": "never leaves the machine",
-    "frontier-client": "The installed, unmodified provider client owns its networking and credentials; this is a provider boundary, not an exhaustive inventory of its internal hosts."
+    "frontier-client": "The installed, unmodified provider client owns its networking and credentials; this is a provider boundary, not an exhaustive inventory of its internal hosts.",
+    "dependency-registry": "Pinned JavaScript package downloads at source build time only."
   },
   "_the_claim": [
     "2026-09-05 fork exception: the original Intaglio claims below exclude onejob. On Send, the separate app passes active-problem context to official Codex or Claude Code. No inherited corpus is read. Selected-folder indexing stays local, using existing readers, SQLite FTS5, and a network-denied macOS embedding helper. No hosted memory or embedding service is used. Provider clients own their full network host inventory; the root hosts below identify that boundary.",
+    "2026-09-05 onejob tool extension: the user authorized direct APIs, MCP and Aside, without Docker. User-configured origins cannot be enumerated by this literal-host scanner. The executor pins API/MCP origins and asks for each external action. MCP operators receive approved inputs and may forward them. Aside CLI controls task tabs; browser websites, subresources, redirects, sync and telemetry remain governed by Aside and user settings. The app asks users to disable Aside analytics/sync but does not audit its traffic. The official 1Password desktop SDK owns its service networking; onejob only resolves a user-configured reference after action approval. These are explicit boundaries, not a claim of zero third-party egress.",
     "The narrow claim this system actually keeps, stated once:",
     "HAZLIE SENDS NO CORPUS TEXT TO A CLOUD MODEL. All reasoning and narration",
     "happen locally, on loopback llama-server instances.",
@@ -674,6 +676,16 @@
       "credential": "Owned by unmodified provider clients; not read by onejob",
       "decision": "User requested Claude/OpenAI account connection on 2026-09-05. ChatGPT uses documented managed app-server authentication in a separate profile. Claude Code is invoked locally with user-owned native authentication, subject to applicable provider terms. No token extraction, account pooling, or automated background usage.",
       "evidence": "widget/focus/README.md"
+    },
+    {
+      "host": "registry.npmjs.org",
+      "kind": "dependency-registry",
+      "component": "ui/server/focus/package-lock.json",
+      "direction": "inbound-fetch",
+      "purpose": "Install pinned official MCP and 1Password SDKs and dependencies for the native onejob runtime",
+      "credential": "none",
+      "decision": "User requested reuse of existing tools without Docker; dependency installation is a source build step.",
+      "evidence": "ui/server/focus/package-lock.json"
     }
   ],
   "_loopback": [

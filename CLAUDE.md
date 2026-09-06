@@ -8,7 +8,12 @@ user-added notes and selected-folder excerpts through the explicitly selected of
 client when the user presses Send. It never imports the inherited corpus.
 Credentials remain owned by those clients. Codex uses an independent profile;
 Claude Code uses its own native sign-in. No credential copying or symlinks, no
-background inference, and no account actions other than explicit sign-in/out.
+background inference, or hidden provider-native tools. The user authorized
+reviewed account actions through direct APIs, MCP, and Aside. onejob owns the
+tool loop: external operations require approval of their destination and data.
+1Password supplies configured credentials to the executor, outside model context.
+No Docker or hosted integration broker is required. API/MCP operators receive
+approved requests; Aside and websites retain their own networking policies.
 User-selected folders may be indexed and refreshed locally every 30 seconds.
 Reuse the local file readers, SQLite FTS5, and macOS NaturalLanguage; no hosted
 memory or embedding services. The embedding helper must deny network access.

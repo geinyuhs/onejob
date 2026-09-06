@@ -47,3 +47,16 @@ test('sending stops voice recording before model dispatch',()=>voiceScenario(sou
 test('mutation proof: removing microphone stop fails',async()=>{
  await assert.rejects(voiceScenario(source.replace("if(listening)fire('stopListening');",'')),/recording must stop/);
 });
+
+async function approvalScenario(code){
+ const f=await fixture(code);const before=f.posts.length;
+ f.window.focusReceive({event:'toolApproval',id:'synthetic-approval',tool:'api.request',connection:'Synthetic API',destination:'https://api.example.com/items',arguments:{body:'<img src=x onerror=alert(1)>'},notice:'Review the exact request.'});
+ assert.equal(f.posts.length,before,'displaying a proposal must not approve it');
+ assert.ok(f.get('tool-arguments').textContent.includes('<img src=x onerror=alert(1)>'));
+ f.get('approve-tool').onclick();assert.deepEqual(JSON.parse(JSON.stringify(f.posts.at(-1).params)),{id:'synthetic-approval',approved:true});await f.respond({accepted:true});
+ f.get('approve-tool').onclick();assert.equal(f.posts.length,before+1,'approval can be submitted only once');
+}
+test('tool approval displays inert text and requires one deliberate click',()=>approvalScenario(source));
+test('mutation proof: automatic approval fails the UI approval test',async()=>{
+ await assert.rejects(approvalScenario(source.replace("approvalId=message.id;", "approvalId=message.id;fire('approval',{id:message.id,approved:true});")),/must not approve/);
+});
