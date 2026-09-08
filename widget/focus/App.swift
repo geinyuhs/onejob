@@ -328,7 +328,7 @@ final class FocusApp: NSObject, NSApplicationDelegate, WKScriptMessageHandler, W
         if tapInstalled { engine.inputNode.removeTap(onBus: 0); tapInstalled = false }
         request?.endAudio(); request = nil
         voiceGeneration = nil; recognition?.cancel(); recognition = nil; listening = false
-        emit(["event": "voice", "listening": false, "message": transcript.isEmpty ? "Tap the orb to speak, or write below." : "Review your words, then send."])
+        emit(["event": "voice", "listening": false, "message": transcript.isEmpty ? "" : "Review your words, then send."])
     }
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didStart utterance: AVSpeechUtterance) { emit(["event": "speech", "speaking": true]) }
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) { emit(["event": "speech", "speaking": false]) }
