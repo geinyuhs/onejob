@@ -26,3 +26,12 @@ body[data-step="work"] .f-composer textarea{min-height:65px}
 body[data-step="research"] .f-orb-stage{height:95px}body[data-step="research"] .f-orb-stage .orb-btn{scale:1.4}
 body[data-step="research"] h1{font-size:34px}.f-browser-details{margin:12px 0;color:var(--f-muted);font-size:12px}
 .f-browser-details summary{cursor:pointer}.f-step .f-browser-setup{margin:12px 0}.f-step .f-browser-setup h2{margin:12px 0}
+
+/* Keep the connection screen to its title, choice, and action. */
+.f-header{justify-content:flex-end}
+body[data-step="connect"] .f-header{display:none}
+body[data-step="connect"] .f-layout{min-height:100vh}
+body[data-step="connect"] .f-conversation{min-height:100vh;justify-content:center;padding:48px 60px}
+body[data-step="connect"] .f-hero{margin:0 0 28px}
+body[data-step="connect"] h1{margin:0}
+.f-hero p:empty{display:none}

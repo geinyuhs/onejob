@@ -3,40 +3,12 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <title>onejob</title><link rel="stylesheet" href="../../ui/palette.css"><link rel="stylesheet" href="focus.css"></head>
 <body data-step="connect">
-<header class="f-header"><div class="f-brand"><span class="f-mark">1</span> ONEJOB</div><div><button id="notes-toggle" class="f-quiet" hidden>Working notes</button><button id="settings" class="f-quiet">Connect your AI <span>↗</span></button></div></header>
+<header class="f-header"><div><button id="notes-toggle" class="f-quiet" hidden>Working notes</button><button id="settings" class="f-quiet">Connect your AI <span>↗</span></button></div></header>
 <main class="f-layout" id="layout">
 <section class="f-conversation">
-<div class="f-hero"><div class="f-orb-stage"><button class="orb-btn" id="orb" disabled title="Start voice input" aria-label="Start voice input">
-
-        <span class="orb notify">
-          <span class="orb-body">
-            <span class="orb-layer la"><span class="orb-blob ba"></span></span>
-            <span class="orb-layer lb"><span class="orb-blob bb"></span></span>
-            <span class="orb-layer lc"><span class="orb-blob bc"></span></span>
-            <span class="orb-hl"></span>
-            <span class="blush bl"></span>
-            <span class="blush br"></span>
-          </span>
-          <span class="face">
-
-            <span class="eye el"><svg class="swirl" viewBox="0 0 24 24" aria-hidden="true"><path d="M12.2 12.1 L12.3 12.2 L12.3 12.4 L12.3 12.5 L12.3 12.7 L12.1 12.9 L11.9 13.0 L11.6 13.1 L11.3 13.1 L11.0 13.1 L10.7 12.9 L10.4 12.6 L10.1 12.3 L10.0 11.9 L9.9 11.4 L10.0 10.9 L10.2 10.4 L10.5 9.9 L10.9 9.5 L11.5 9.2 L12.1 9.0 L12.8 9.0 L13.5 9.1 L14.2 9.4 L14.8 9.9 L15.3 10.5 L15.7 11.2 L16.0 12.0 L16.0 12.9 L15.8 13.8 L15.4 14.7 L14.8 15.5 L14.1 16.2 L13.2 16.6 L12.1 16.9 L11.0 17.0 L9.9 16.8 L8.8 16.3 L7.9 15.6 L7.1 14.7 L6.5 13.6 L6.1 12.3 L6.1 11.0 L6.3 9.7 L6.8 8.4 L7.6 7.3 L8.7 6.3 L10.0 5.6 L11.4 5.2 L12.9 5.1 L14.5 5.3 L16.0 5.9 L17.3 6.8 L18.4 8.0 L19.3 9.5 L19.8 11.1 L19.9 12.8 L19.7 14.6 L19.0 16.3 L18.0 17.8 L16.7 19.1 L15.1 20.1 L13.3 20.7 L11.4 20.9 L9.4 20.7 L7.5 20.0"/></svg></span>
-            <span class="eye er"><svg class="swirl" viewBox="0 0 24 24" aria-hidden="true"><path d="M12.2 12.1 L12.3 12.2 L12.3 12.4 L12.3 12.5 L12.3 12.7 L12.1 12.9 L11.9 13.0 L11.6 13.1 L11.3 13.1 L11.0 13.1 L10.7 12.9 L10.4 12.6 L10.1 12.3 L10.0 11.9 L9.9 11.4 L10.0 10.9 L10.2 10.4 L10.5 9.9 L10.9 9.5 L11.5 9.2 L12.1 9.0 L12.8 9.0 L13.5 9.1 L14.2 9.4 L14.8 9.9 L15.3 10.5 L15.7 11.2 L16.0 12.0 L16.0 12.9 L15.8 13.8 L15.4 14.7 L14.8 15.5 L14.1 16.2 L13.2 16.6 L12.1 16.9 L11.0 17.0 L9.9 16.8 L8.8 16.3 L7.9 15.6 L7.1 14.7 L6.5 13.6 L6.1 12.3 L6.1 11.0 L6.3 9.7 L6.8 8.4 L7.6 7.3 L8.7 6.3 L10.0 5.6 L11.4 5.2 L12.9 5.1 L14.5 5.3 L16.0 5.9 L17.3 6.8 L18.4 8.0 L19.3 9.5 L19.8 11.1 L19.9 12.8 L19.7 14.6 L19.0 16.3 L18.0 17.8 L16.7 19.1 L15.1 20.1 L13.3 20.7 L11.4 20.9 L9.4 20.7 L7.5 20.0"/></svg></span>
-          </span>
-          <span class="zzz z1"><i>z</i></span>
-          <span class="zzz z2"><i>z</i></span>
-
-          <span class="orb-thoughts" aria-hidden="true">
-            <i class="thought th1"></i>
-            <i class="thought th2"></i>
-            <i class="thought th3"></i>
-          </span>
-          <span class="orb-badge">1</span>
-
-          <span class="burst"></span>
-        </span>
-      </button></div><div class="f-eyebrow" id="eyebrow">1 / 4 · CONNECT</div><h1 id="headline">First, connect your AI.</h1><p id="subhead">Bring the AI you already use.</p></div>
+<div class="f-hero"><h1 id="headline">First, connect your AI.</h1><p id="subhead"></p></div>
 <p id="voice-status" class="f-status" role="status"></p>
-<section id="connect-step" class="f-step"><label class="f-provider-label">Your AI<select id="connect-provider"><option value="chatgpt">ChatGPT · Codex</option><option value="claude">Claude Code</option></select></label><button id="connect-model" class="f-primary">Continue with ChatGPT</button><p class="f-fine">Sign in through your AI’s official app. Your password stays there.</p></section>
+<section id="connect-step" class="f-step"><label class="f-provider-label">Your AI<select id="connect-provider"><option value="chatgpt">ChatGPT · Codex</option><option value="claude">Claude Code</option></select></label><button id="connect-model" class="f-primary">Continue with ChatGPT</button></section>
 <section id="research-step" class="f-step" hidden><div id="research-browser" hidden><p>Let onejob find context in the websites you already use.</p><div id="browser-slot"></div><button id="skip-browser" class="f-quiet">Use only the context I’ve provided</button></div><p id="research-progress" role="status">Looking for useful context…</p><p class="f-fine">Review any browser requests as they appear. You can leave this window open while onejob works.</p><button id="research-stop" class="f-quiet">Stop research</button></section>
 <section id="plan-step" class="f-step" hidden><div id="plan-text" class="f-plan"></div><button id="accept-plan" class="f-primary">Work on this plan</button><button id="revise-plan" class="f-quiet">Change the problem</button></section>
 <div id="conversation" class="f-messages" aria-live="polite"></div>

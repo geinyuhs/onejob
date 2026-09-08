@@ -84,7 +84,7 @@ test('browser-first setup detects one profile without requesting per-service con
 });
 test('onboarding connects the model before exposing the problem composer',async()=>{
  const f=await fixture(source,{onboarding:{stage:'connect',draft:'',plan:''}});
- assert.equal(f.get('connect-step').hidden,false);assert.equal(f.get('compose-area').hidden,true);assert.equal(f.get('orb').disabled,true);
+ assert.equal(f.get('connect-step').hidden,false);assert.equal(f.get('compose-area').hidden,true);
  const pending=f.get('connect-model').onclick();assert.equal(f.posts.at(-1).method,'openJob');await f.respond(f.state);assert.equal(f.posts.at(-1).method,'modelStatus');await f.respond({connected:true});assert.equal(f.posts.at(-1).method,'modelReady');
  await f.respond({...f.state,onboarding:{stage:'problem',draft:'',plan:''}});await pending;
  assert.equal(f.get('connect-step').hidden,true);assert.equal(f.get('compose-area').hidden,false);assert.equal(f.get('send').firstChild.textContent,'Research my problem ');

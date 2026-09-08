@@ -9,15 +9,14 @@
     });
   }
   function status(text){$('voice-status').textContent=text;}
-  function orb(mode){$('orb').querySelector('.orb').className='orb '+mode;}
   function error(error){status(error.message);}
   async function act(method,params){try{const result=await native(method,params);return result;}catch(e){error(e);throw e;}}
   function fire(method,params){native(method,params).catch(error);}
   window.focusReceive=message=>{
     if(message.event==='transcript') {$('message').value=[voicePrefix,message.text].filter(Boolean).join(' ');status('Review your words, then send.');saveDraft();}
-    else if(message.event==='voice') {listening=message.listening;transcribing=!!message.transcribing;$('send').disabled=busy||transcribing;$('mic').disabled=transcribing;$('send').firstChild.textContent=listening?'Finish speaking ':state.onboarding?.stage==='problem'?'Research my problem ':'Send ';$('mic').textContent=listening?'◉ Finish speaking':'◉ Speak';orb(listening?'listening':'notify');status(message.message);}
+    else if(message.event==='voice') {listening=message.listening;transcribing=!!message.transcribing;$('send').disabled=busy||transcribing;$('mic').disabled=transcribing;$('send').firstChild.textContent=listening?'Finish speaking ':state.onboarding?.stage==='problem'?'Research my problem ':'Send ';$('mic').textContent=listening?'◉ Finish speaking':'◉ Speak';status(message.message);}
     else if(message.event==='voiceSetup') {$('voice-setup-status').textContent=message.message;}
-    else if(message.event==='speech') {orb(message.speaking?'talking':'notify');}
+    else if(message.event==='speech') { /* Native speech has no in-window avatar. */ }
     else if(message.event==='error') error(new Error(message.message));
     else if(message.event==='accountChanged') refreshAccount();
     else if(message.event==='runProgress') {status(message.message);$('research-progress').textContent=message.message;}
@@ -31,7 +30,7 @@
     else {const p=pending.get(message.id);if(p){pending.delete(message.id);message.error?p.reject(new Error(message.error)):p.resolve(message.result);}}
   };
   function node(tag,text,className){const el=document.createElement(tag);if(text!==undefined)el.textContent=text;if(className)el.className=className;return el;}
-  function setBusy(value){busy=value;$('send').disabled=value;$('stop').hidden=!value;$('message').disabled=value;orb(value?'processing':'notify');$('save-connection').disabled=value;$('connect-browser').disabled=value;for(const button of $('service-cards').querySelectorAll?.('button')||[])button.disabled=value;if(!value){$('tool-dialog').close();approvalId=null;}}
+  function setBusy(value){busy=value;$('send').disabled=value;$('stop').hidden=!value;$('message').disabled=value;$('save-connection').disabled=value;$('connect-browser').disabled=value;for(const button of $('service-cards').querySelectorAll?.('button')||[])button.disabled=value;if(!value){$('tool-dialog').close();approvalId=null;}}
   function render(s){
     const changed=state.problem?.id!==s.problem?.id;
     if(changed){$('matches').replaceChildren();$('search-form').reset();$('source-form').reset();}
@@ -42,8 +41,8 @@
     $('send').firstChild.textContent=s.problem?'Send ':'Start here ';
     $('send-note').textContent=s.problem?`Sending shares this problem, recent conversation, and relevant notes or folder excerpts with ${s.provider==='claude'?'your Claude Code client':'OpenAI through Codex'}. External tool actions require your review.`:'Your first problem brief is saved on this Mac.';
     $('provider').value=s.provider;providerView();
-    if(s.problem){$('headline').textContent=s.problem.title;$('eyebrow').textContent='YOUR ONE THING';for(const [key,value]of Object.entries(s.problem.brief)){$('brief-form').elements.namedItem(key).value=value;}}
-    else {$('headline').replaceChildren(node('span','What’s the one thing'),node('br'),node('span','you want to change?'));$('eyebrow').textContent='ONE THING. YOUR FULL ATTENTION.';}
+    if(s.problem){$('headline').textContent=s.problem.title;for(const [key,value]of Object.entries(s.problem.brief)){$('brief-form').elements.namedItem(key).value=value;}}
+    else {$('headline').replaceChildren(node('span','What’s the one thing'),node('br'),node('span','you want to change?'));}
     const messages=s.entries.filter(e=>['user','assistant'].includes(e.kind));
     $('conversation').replaceChildren(...messages.map(e=>{const el=node('div',undefined,'f-message '+e.kind);el.append(node('span',e.kind==='user'?'You':'onejob','f-speaker'),document.createTextNode(e.text));return el;}));
     $('conversation').scrollTop=$('conversation').scrollHeight;
@@ -97,7 +96,7 @@
   $('message').oninput=saveDraft;
   $('message').onkeydown=event=>{if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();$('composer').requestSubmit();}};
   function toggleVoice(){if(busy||transcribing)return;if(!listening)voicePrefix=$('message').value.trim();fire('stopSpeech');fire(listening?'stopListening':'startListening');}
-  $('orb').onclick=toggleVoice;$('mic').onclick=toggleVoice;
+  $('mic').onclick=toggleVoice;
   $('stop').onclick=()=>fire('stop');
   $('brief-form').onsubmit=e=>{e.preventDefault();const brief=Object.fromEntries(new FormData(e.target));act('brief',{brief}).then(s=>{render(s);status('Brief saved.');}).catch(error);};
   $('source-form').onsubmit=e=>{e.preventDefault();act('source',{title:'Added note',text:$('source-text').value}).then(s=>{render(s);e.target.reset();status('Context saved to this problem.');}).catch(error);};
@@ -121,7 +120,7 @@
   $('show-artifacts').onclick=()=>fire('showArtifacts');
   function renderStep(){
     const step=state.problem?(state.onboarding?.stage||'work'):'connect';
-    document.body.dataset.step=step;document.body.classList.toggle('has-problem',step==='work');$('orb').disabled=!['problem','work'].includes(step);
+    document.body.dataset.step=step;document.body.classList.toggle('has-problem',step==='work');
     for(const name of ['connect','research','plan'])$(name+'-step').hidden=name!==step;
     if(!pendingResearch)$('browser-home').append($('browser-card'));
     $('research-browser').hidden=!pendingResearch;$('research-progress').hidden=!!pendingResearch;$('research-stop').hidden=!!pendingResearch;
@@ -129,15 +128,13 @@
     $('conversation').hidden=step!=='work';$('notes-toggle').hidden=!['work','plan'].includes(step);
     if(!['work','plan'].includes(step))$('notebook').hidden=true;
     $('layout').classList.toggle('with-notes',!$('notebook').hidden);
-    $('eyebrow').textContent=({connect:'1 / 4 · CONNECT',problem:'2 / 4 · YOUR PROBLEM',research:'3 / 4 · RESEARCH',plan:'4 / 4 · YOUR PLAN',work:'YOUR ONEJOB'})[step];
     const titles={connect:'First, connect your AI.',problem:'What’s the one thing you want to change?',research:'Let’s understand the whole picture.',plan:'A way forward.'};
     if(titles[step])$('headline').textContent=titles[step];
-    $('subhead').textContent=({connect:'Bring the AI you already use.',problem:'Write it out or talk it through. Messy is fine.',research:'Finding the context that could change the plan.',plan:'Read it through. We’ll take it one step at a time.',work:''})[step];
+    $('subhead').textContent=({connect:'',problem:'Write it out or talk it through. Messy is fine.',research:'Finding the context that could change the plan.',plan:'Read it through. We’ll take it one step at a time.',work:''})[step];
     $('send').firstChild.textContent=step==='problem'?'Research my problem ':'Send ';
     $('send-note').textContent=step==='problem'?'Your words and relevant context go to your chosen AI.':$('send-note').textContent;
     $('connect-provider').value=state.provider;
     $('plan-text').textContent=state.onboarding?.plan||'';
-    if(step==='research')orb('processing');
   }
   $('notes-toggle').onclick=()=>{$('notebook').hidden=!$('notebook').hidden;$('layout').classList.toggle('with-notes',!$('notebook').hidden);};
   $('connect-provider').onchange=()=>act('provider',{provider:$('connect-provider').value}).then(s=>{render(s);$('connect-model').textContent=s.provider==='claude'?'Continue with Claude':'Continue with ChatGPT';}).catch(error);
