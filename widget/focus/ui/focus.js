@@ -166,7 +166,7 @@
     $('layout').classList.toggle('with-notes',!$('notebook').hidden);
     const titles={connect:'bring your own AI',problem:'What’s the one thing you want to change?',research:'Let’s understand the whole picture.',plan:'A way forward.'};
     if(titles[step])$('headline').textContent=titles[step];
-    $('subhead').textContent=({connect:'',problem:'Write it out or talk it through. Messy is fine.',research:'Finding the context that could change the plan.',plan:'Read it through. We’ll take it one step at a time.',work:''})[step];
+    $('subhead').textContent=({connect:'',problem:'',research:'Finding the context that could change the plan.',plan:'Read it through. We’ll take it one step at a time.',work:''})[step];
     $('send').firstChild.textContent=step==='problem'?'Research my problem ':'Send ';
     $('send-note').textContent=step==='problem'?'Your words and relevant context go to your chosen AI.':$('send-note').textContent;
     renderAccounts();scheduleModelCheck();
@@ -190,7 +190,7 @@
       await refreshModels();const provider=readyProvider();
       if(provider){
         render(await act('openJob'));render(await act('provider',{provider}));
-        render(await act('modelReady'));status('Describe it in your own words.');
+        render(await act('modelReady'));status('');
       }else await signIn(state.provider);
     }catch(err){error(err);}finally{accountAction=false;renderAccounts();}
   };
