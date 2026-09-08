@@ -44,3 +44,14 @@ body[data-step="connect"] h1{margin:0}
 
 .f-provider-logo{position:relative}
 .f-account-check{position:absolute;right:-7px;top:-7px;display:grid;place-items:center;width:24px;height:24px;border-radius:6px;background:var(--f-accent);color:#252b20;border:2px solid #181b18;font-size:15px;font-weight:700}
+
+/* Keep the problem prompt and composer together as one focused action. */
+body[data-step="problem"] .f-header,body[data-step="problem"] #send-note{display:none}
+body[data-step="problem"] .f-layout{min-height:100vh}
+body[data-step="problem"] .f-conversation{min-height:100vh;justify-content:center}
+body[data-step="problem"] .f-hero{margin:0 0 28px}
+body[data-step="problem"] h1{margin:0}
+body[data-step="problem"] .f-compose-area{margin-top:0}
+body[data-step="problem"] .f-messages:empty{display:none}
+
+#send:disabled{background:#40433e;color:#92958d;opacity:1;cursor:default}

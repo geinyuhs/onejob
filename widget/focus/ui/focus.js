@@ -9,13 +9,17 @@
       const id=++serial;pending.set(id,{resolve,reject});window.webkit.messageHandlers.focus.postMessage({id,method,params});
     });
   }
+  function updateSend(){
+    $('send').disabled=busy||transcribing||!$('message').value.trim();
+    $('send').firstChild.textContent=state.onboarding?.stage==='problem'?'Continue ':listening?'Finish speaking ':'Send ';
+  }
   function status(text){$('voice-status').textContent=text;}
   function error(error){status(error.message);}
   async function act(method,params){try{const result=await native(method,params);return result;}catch(e){error(e);throw e;}}
   function fire(method,params){native(method,params).catch(error);}
   window.focusReceive=message=>{
     if(message.event==='transcript') {$('message').value=[voicePrefix,message.text].filter(Boolean).join(' ');status('Review your words, then send.');saveDraft();}
-    else if(message.event==='voice') {listening=message.listening;transcribing=!!message.transcribing;$('send').disabled=busy||transcribing;$('mic').disabled=transcribing;$('send').firstChild.textContent=listening?'Finish speaking ':state.onboarding?.stage==='problem'?'Research my problem ':'Send ';$('mic').textContent=listening?'◉ Finish speaking':'◉ Speak';status(message.message);}
+    else if(message.event==='voice') {listening=message.listening;transcribing=!!message.transcribing;updateSend();$('mic').disabled=transcribing;$('mic').textContent=listening?'◉ Finish speaking':'◉ Speak';status(message.message);}
     else if(message.event==='voiceSetup') {$('voice-setup-status').textContent=message.message;}
     else if(message.event==='speech') { /* Native speech has no in-window avatar. */ }
     else if(message.event==='error') error(new Error(message.message));
@@ -31,7 +35,7 @@
     else {const p=pending.get(message.id);if(p){pending.delete(message.id);message.error?p.reject(new Error(message.error)):p.resolve(message.result);}}
   };
   function node(tag,text,className){const el=document.createElement(tag);if(text!==undefined)el.textContent=text;if(className)el.className=className;return el;}
-  function setBusy(value){busy=value;$('send').disabled=value;$('stop').hidden=!value;$('message').disabled=value;$('save-connection').disabled=value;$('connect-browser').disabled=value;for(const button of $('service-cards').querySelectorAll?.('button')||[])button.disabled=value;if(!value){$('tool-dialog').close();approvalId=null;}}
+  function setBusy(value){busy=value;updateSend();$('stop').hidden=!value;$('message').disabled=value;$('save-connection').disabled=value;$('connect-browser').disabled=value;for(const button of $('service-cards').querySelectorAll?.('button')||[])button.disabled=value;if(!value){$('tool-dialog').close();approvalId=null;}}
   function render(s){
     const changed=state.problem?.id!==s.problem?.id;
     if(changed){$('matches').replaceChildren();$('search-form').reset();$('source-form').reset();}
@@ -128,7 +132,7 @@
       if($('spoken').checked){const reply=answer.entries.filter(e=>e.kind==='assistant').at(-1);if(reply)fire('speak',{text:reply.text});}
     }catch(e){const current=await native('state').catch(error=>state);render(current);error(e);}finally{setBusy(false);}
   };
-  function saveDraft(){if(state.onboarding?.stage==='problem')fire('saveDraft',{id:state.problem.id,text:$('message').value});}
+  function saveDraft(){updateSend();if(state.onboarding?.stage==='problem')fire('saveDraft',{id:state.problem.id,text:$('message').value});}
   $('message').oninput=saveDraft;
   $('message').onkeydown=event=>{if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();$('composer').requestSubmit();}};
   function toggleVoice(){if(busy||transcribing)return;if(!listening)voicePrefix=$('message').value.trim();fire('stopSpeech');fire(listening?'stopListening':'startListening');}
@@ -167,7 +171,7 @@
     const titles={connect:'bring your own AI',problem:'What’s the one thing you want to change?',research:'Let’s understand the whole picture.',plan:'A way forward.'};
     if(titles[step])$('headline').textContent=titles[step];
     $('subhead').textContent=({connect:'',problem:'',research:'Finding the context that could change the plan.',plan:'Read it through. We’ll take it one step at a time.',work:''})[step];
-    $('send').firstChild.textContent=step==='problem'?'Research my problem ':'Send ';
+    updateSend();
     $('send-note').textContent=step==='problem'?'Your words and relevant context go to your chosen AI.':$('send-note').textContent;
     renderAccounts();scheduleModelCheck();
     $('plan-text').textContent=state.onboarding?.plan||'';
@@ -204,7 +208,7 @@
   $('skip-browser').onclick=runPendingResearch;
   $('research-stop').onclick=()=>fire('stop');
   $('accept-plan').onclick=()=>act('acceptPlan').then(render).catch(error);
-  $('revise-plan').onclick=()=>act('reviseProblem').then(s=>{render(s);$('message').value=s.onboarding.draft;}).catch(error);
+  $('revise-plan').onclick=()=>act('reviseProblem').then(s=>{render(s);$('message').value=s.onboarding.draft;updateSend();}).catch(error);
   window.addEventListener('focus',()=>{if(state.onboarding?.stage==='connect')refreshModels();});
   native('openJob').then(s=>{render(s);refreshModels();refreshSetup();}).catch(error);
 })();

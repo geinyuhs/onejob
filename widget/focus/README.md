@@ -77,8 +77,8 @@ to avoid silently charging a different API account; users can configure their
 chosen account directly in the official client.
 
 **What leaves:** on Send, the selected client receives the active problem brief,
-recent conversation, and relevant notes, selected-folder excerpts, and tool results. The composer discloses
-this before sending. The provider controls its retention and training policies;
+recent conversation, and relevant notes, selected-folder excerpts, and tool results. The problem screen omits the sharing footer; this section documents
+the data boundary. The provider controls its retention and training policies;
 local storage and ephemeral client sessions do not promise zero cloud retention.
 The app does not import the original Intaglio corpus or other conversations.
 Mail, calendar and websites can be accessed through connections you configure

@@ -90,7 +90,7 @@ test('onboarding continues with a verified connected model without reopening sig
  const pending=f.get('connect-model').onclick();assert.equal(f.posts.at(-1).method,'modelAccounts');await f.respond(accounts);
  assert.equal(f.posts.at(-1).method,'openJob');await f.respond(f.state);assert.equal(f.posts.at(-1).method,'provider');await f.respond(f.state);assert.equal(f.posts.at(-1).method,'modelReady');
  await f.respond({...f.state,onboarding:{stage:'problem',draft:'',plan:''}});await pending;
- assert.equal(f.get('connect-step').hidden,true);assert.equal(f.get('compose-area').hidden,false);assert.equal(f.get('send').firstChild.textContent,'Research my problem ');
+ assert.equal(f.get('connect-step').hidden,true);assert.equal(f.get('compose-area').hidden,false);assert.equal(f.get('send').firstChild.textContent,'Continue ');
  assert.equal(f.timers.size,0,'account polling ends after connection setup');assert.ok(!f.posts.some(p=>p.method==='login'||p.method==='claudeLogin'));
 });
 test('missing browser access is requested inside research without dispatching the model',async()=>{
@@ -165,4 +165,29 @@ test('Continue uses the available Claude account when ChatGPT cannot be checked'
  assert.equal(f.posts.at(-1).method,'provider');assert.equal(f.posts.at(-1).params.provider,'claude');
  await f.respond({...f.state,provider:'claude'});assert.equal(f.posts.at(-1).method,'modelReady');await f.respond({...f.state,provider:'claude',onboarding:{stage:'problem',draft:'',plan:''}});await task;
  assert.ok(!f.posts.some(p=>p.method==='login'||p.method==='claudeLogin'));
+});
+
+async function emptyContinueScenario(code){
+ const f=await fixture(code,{onboarding:{stage:'problem',draft:'',plan:''}});
+ assert.equal(f.get('send').firstChild.textContent,'Continue ');
+ assert.equal(f.get('send').disabled,true,'empty problem must disable Continue');
+ f.get('message').value='   \n  ';f.get('message').oninput();
+ assert.equal(f.get('send').disabled,true,'whitespace must not enable Continue');
+ await f.get('composer').onsubmit({preventDefault(){}});
+ assert.ok(!f.posts.some(p=>p.method==='research'||p.method==='send'));
+ f.get('message').value='A synthetic problem';f.get('message').oninput();assert.equal(f.get('send').disabled,false);
+ f.get('message').value='';f.get('message').oninput();assert.equal(f.get('send').disabled,true);
+ f.window.focusReceive({event:'voice',listening:true,message:'Listening'});assert.equal(f.get('send').disabled,true);
+ f.window.focusReceive({event:'voice',listening:false,transcribing:true,message:'Transcribing'});
+ f.window.focusReceive({event:'transcript',text:'A dictated synthetic problem'});assert.equal(f.get('send').disabled,true,'transcription must finish before continuing');
+ f.window.focusReceive({event:'voice',listening:false,message:'Ready'});assert.equal(f.get('send').disabled,false);assert.equal(f.get('send').firstChild.textContent,'Continue ');
+}
+test('Continue requires typed or completed dictated input, including after clearing the field',()=>emptyContinueScenario(source));
+test('mutation proof: removing the empty-input check enables Continue too early',async()=>{
+ const check="||!$('message').value.trim()";assert.ok(source.includes(check));
+ await assert.rejects(emptyContinueScenario(source.replace(check,'')),/empty problem must disable Continue/);
+});
+test('a restored problem draft enables Continue immediately',async()=>{
+ const f=await fixture(source,{onboarding:{stage:'problem',draft:'A saved synthetic problem',plan:''}});
+ assert.equal(f.get('send').disabled,false);assert.equal(f.get('send').firstChild.textContent,'Continue ');
 });
