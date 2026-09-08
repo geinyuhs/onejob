@@ -74,6 +74,14 @@ export class ProblemService {
         if(!['plan','work','problem'].includes(this.flow.state().stage))throw new ProblemError('Connect your AI first.');
         if(this.job)throw new ProblemError('Stop the current run first.');
         this.flow.stage('problem');return this.snapshot();
+      case 'modelAccounts': {
+        const providers=['chatgpt','claude'];
+        const results=await Promise.allSettled(providers.map(async provider=>this.clients[provider].account()));
+        return Object.fromEntries(providers.map((provider,index)=>{
+          const result=results[index];
+          return [provider,{connected:result.status==='fulfilled' && result.value?.connected===true,checked:result.status==='fulfilled'}];
+        }));
+      }
       case 'modelStatus': return this.clients[this.store.config()?.provider||'chatgpt'].account();
       case 'account': return this.clients.chatgpt.account();
       case 'login': return this.clients.chatgpt.login();

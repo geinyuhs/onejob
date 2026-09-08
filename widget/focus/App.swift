@@ -169,6 +169,7 @@ final class FocusApp: NSObject, NSApplicationDelegate, WKScriptMessageHandler, W
             orbPanels[id]?.setFrameOrigin(NSPoint(x:frame.minX + 6 + CGFloat(index / rows) * 78,y:frame.maxY - 92 - CGFloat(index % rows) * 82))
         }
     }
+    func applicationDidBecomeActive(_ notification: Notification) {emit(["event":"accountChanged"])}
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {window.makeKeyAndOrderFront(nil); return true}
     func emit(_ value: [String: Any]) {
         do {

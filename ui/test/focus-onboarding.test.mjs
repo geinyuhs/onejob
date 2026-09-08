@@ -53,3 +53,18 @@ test('mutation proof: opening must not create a duplicate job',async t=>{
  const path=join(dir,'service.mjs'),s=readFileSync(path,'utf8');const guard='if(!this.store.active())this.flow.create();';assert.ok(s.includes(guard));writeFileSync(path,s.replace(guard,'this.flow.create();'));
  const {ProblemService:Broken}=await import(pathToFileURL(path));await assert.rejects(openScenario(t,Broken),/opening must keep the selected job/);
 });
+test('both account statuses are independent and expose only readiness flags',async t=>{
+ const f=fixture(t);let reads=0;
+ f.clients.chatgpt.account=async()=>{reads++;return {connected:true,plan:'synthetic metadata',privateValue:'synthetic private field'};};
+ f.clients.claude={account:async()=>{reads++;throw new Error('synthetic private error');}};
+ assert.deepEqual(await f.service.call('modelAccounts'),{chatgpt:{connected:true,checked:true},claude:{connected:false,checked:false}});
+ assert.equal(reads,2);assert.equal(f.calls.length,0,'account checks must not invoke inference');
+ f.clients.chatgpt.account=async()=>{throw new Error('unavailable');};f.clients.claude.account=async()=>({connected:true});
+ assert.deepEqual(await f.service.call('modelAccounts'),{chatgpt:{connected:false,checked:false},claude:{connected:true,checked:true}});
+});
+async function truthfulStatus(t,Service=ProblemService){const f=fixture(t,Service);f.clients.claude={account:async()=>({connected:'false'})};assert.equal((await f.service.call('modelAccounts')).claude.connected,false,'only a verified boolean true can mark an account connected');}
+test('an unverified account status cannot produce a connected checkmark',t=>truthfulStatus(t));
+test('mutation proof: truthy account metadata cannot mark a model connected',async t=>{
+ const dir=mkdtempSync(join(tmpdir(),'onejob-account-mutant-'));t.after(()=>rmSync(dir,{recursive:true,force:true}));cpSync(new URL('../server/focus/',import.meta.url),dir,{recursive:true,filter:path=>!path.includes('node_modules')});const path=join(dir,'service.mjs'),s=readFileSync(path,'utf8');const check='result.value?.connected===true';assert.ok(s.includes(check));writeFileSync(path,s.replace(check,'Boolean(result.value?.connected)'));
+ const {ProblemService:Broken}=await import(pathToFileURL(path));await assert.rejects(truthfulStatus(t,Broken),/only a verified boolean true/);
+});

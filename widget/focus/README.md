@@ -241,3 +241,17 @@ models. OpenAI provider documentation: https://developers.openai.com/api/docs/gu
 
 Cloud dictation is implemented but requires live API credentials for an actual
 accuracy/billing test; automated tests use synthetic audio and mocked responses.
+
+### Account detection (0.5)
+
+The model screen reads ChatGPT and Claude Code sign-in status independently through
+their official clients. It checks on opening, after a sign-in notification, when the
+app regains focus, and every 2.5 seconds while this step remains open. Concurrent
+checks share a request. This checks account status only; it does not run inference
+or inspect credential files. Only readiness flags reach the UI.
+
+Connected logos show a checkmark. Clicking an unconnected logo opens that client's
+existing sign-in flow; the other account remains connected. Clicking a connected
+logo selects it. Once either account is ready, Continue rechecks status and advances
+with the selected connected account (or the available one). Sign-in completion does
+not automatically advance, so both accounts can be added on the same screen.

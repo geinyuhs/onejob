@@ -11,17 +11,18 @@ class Element {
  replaceChildren(...items){this.children=items;}
  querySelector(){return this.child??=new Element();}
  reset(){this.resets++;this.value='';}
- setAttribute(){} showModal(){} close(){}
+ setAttribute(key,value){this[key]=value;} showModal(){} close(){}
 }
-async function fixture(code=source,overrides={}){
+async function fixture(code=source,overrides={},accounts={chatgpt:{connected:false,checked:true},claude:{connected:false,checked:true}}){
  const elements=new Map(),posts=[];
  const get=id=>{if(!elements.has(id))elements.set(id,new Element());return elements.get(id);};
  const document={getElementById:get,createElement:()=>new Element(),createTextNode:text=>({textContent:text}),querySelectorAll:()=>[],body:new Element()};
- const window={webkit:{messageHandlers:{focus:{postMessage:m=>posts.push(m)}}}};
- vm.runInNewContext(code,{window,document,console,FormData:class{*[Symbol.iterator](){}}});
+ const timers=new Map(),events={};let timerId=0;
+ const window={addEventListener:(event,handler)=>events[event]=handler,webkit:{messageHandlers:{focus:{postMessage:m=>posts.push(m)}}}};
+ vm.runInNewContext(code,{window,document,console,setTimeout:fn=>{timers.set(++timerId,fn);return timerId;},clearTimeout:id=>timers.delete(id),FormData:class{*[Symbol.iterator](){}}});
  const respond=async(result,id=posts.at(-1).id)=>{window.focusReceive({id,result});await new Promise(r=>setImmediate(r));};
  const state={problem:{id:'synthetic-a',title:'Painting',brief:{}},provider:'chatgpt',entries:[],archives:[],...overrides};
- await respond(state);return {get,posts,respond,state,window};
+ await respond(state);await respond(accounts,posts.find(p=>p.method==='modelAccounts').id);return {get,posts,respond,state,window,timers,events};
 }
 async function archiveScenario(code){
  const f=await fixture(code);f.get('search').value='painting';f.get('search-form').onsubmit({preventDefault(){}});
@@ -82,12 +83,15 @@ test('browser-first setup detects one profile without requesting per-service con
  await f.respond({});await f.respond({clients:{aside:true,asideApp:true},profiles:['u0'],services:[],asideConnection:'synthetic-browser'});await f.respond({...f.state,connections:[]});await task;
  assert.equal(f.get('browser-form').hidden,true);assert.ok(!f.posts.some(p=>p.method==='service.connect'));
 });
-test('onboarding connects the model before exposing the problem composer',async()=>{
- const f=await fixture(source,{onboarding:{stage:'connect',draft:'',plan:''}});
- assert.equal(f.get('connect-step').hidden,false);assert.equal(f.get('compose-area').hidden,true);
- const pending=f.get('connect-model').onclick();assert.equal(f.posts.at(-1).method,'openJob');await f.respond(f.state);assert.equal(f.posts.at(-1).method,'modelStatus');await f.respond({connected:true});assert.equal(f.posts.at(-1).method,'modelReady');
+test('onboarding continues with a verified connected model without reopening sign-in',async()=>{
+ const accounts={chatgpt:{connected:true,checked:true},claude:{connected:false,checked:true}};
+ const f=await fixture(source,{onboarding:{stage:'connect',draft:'',plan:''}},accounts);
+ assert.equal(f.get('connect-step').hidden,false);assert.equal(f.get('compose-area').hidden,true);assert.equal(f.get('connect-model').textContent,'Continue');
+ const pending=f.get('connect-model').onclick();assert.equal(f.posts.at(-1).method,'modelAccounts');await f.respond(accounts);
+ assert.equal(f.posts.at(-1).method,'openJob');await f.respond(f.state);assert.equal(f.posts.at(-1).method,'provider');await f.respond(f.state);assert.equal(f.posts.at(-1).method,'modelReady');
  await f.respond({...f.state,onboarding:{stage:'problem',draft:'',plan:''}});await pending;
  assert.equal(f.get('connect-step').hidden,true);assert.equal(f.get('compose-area').hidden,false);assert.equal(f.get('send').firstChild.textContent,'Research my problem ');
+ assert.equal(f.timers.size,0,'account polling ends after connection setup');assert.ok(!f.posts.some(p=>p.method==='login'||p.method==='claudeLogin'));
 });
 test('missing browser access is requested inside research without dispatching the model',async()=>{
  const f=await fixture(source,{onboarding:{stage:'problem',draft:'',plan:''}});f.get('message').value='A synthetic brain dump';
@@ -110,10 +114,55 @@ test('opening goes straight to model connection without a redundant create page'
  const f=await fixture(source,{onboarding:{stage:'connect',draft:'',plan:''}});
  assert.equal(f.posts[0].method,'openJob');assert.equal(f.get('connect-step').hidden,false);
  assert.equal(f.get('headline').textContent,'bring your own AI');
- f.get('choose-claude').onclick();assert.equal(f.posts.at(-1).method,'provider');assert.equal(f.posts.at(-1).params.provider,'claude');
- await f.respond({...f.state,provider:'claude'});assert.equal(f.get('connect-model').textContent,'Continue with Claude');
- f.get('choose-chatgpt').onclick();assert.equal(f.posts.at(-1).params.provider,'chatgpt');
- await f.respond(f.state);assert.equal(f.get('connect-model').textContent,'Continue with ChatGPT');
  const html=readFileSync(new URL('../focus/ui/index.html',import.meta.url),'utf8');
  assert.doesNotMatch(html,/empty-step|Create a onejob|One problem\. A place to solve it/);
+});
+
+test('login completion checks the logo automatically, without advancing onboarding',async()=>{
+ const f=await fixture(source,{onboarding:{stage:'connect',draft:'',plan:''}});
+ assert.equal(f.get('chatgpt-connected').hidden,true);assert.equal(f.get('connect-model').textContent,'Sign in with ChatGPT');
+ f.window.focusReceive({event:'accountChanged'});assert.equal(f.posts.at(-1).method,'modelAccounts');
+ await f.respond({chatgpt:{connected:true,checked:true},claude:{connected:false,checked:true}});
+ assert.equal(f.get('chatgpt-connected').hidden,false);assert.equal(f.get('claude-connected').hidden,true);assert.equal(f.get('connect-model').textContent,'Continue');
+ assert.equal(f.get('connect-step').hidden,false);assert.ok(!f.posts.some(p=>p.method==='modelReady'));
+});
+test('a second account can sign in while the first remains connected; polling detects both',async()=>{
+ const first={chatgpt:{connected:true,checked:true},claude:{connected:false,checked:true}};
+ const both={chatgpt:{connected:true,checked:true},claude:{connected:true,checked:true}};
+ const f=await fixture(source,{onboarding:{stage:'connect',draft:'',plan:''}},first);
+ const login=f.get('choose-claude').onclick();await f.respond(first);assert.equal(f.posts.at(-1).method,'claudeLogin');
+ assert.equal(f.get('chatgpt-connected').hidden,false);assert.equal(f.get('claude-connected').hidden,true);await f.respond({});await f.respond(first);await login;
+ assert.equal(f.get('connect-model').textContent,'Continue');assert.equal(f.get('claude-connected').hidden,true,'opening sign-in is not proof of connection');
+ const poll=[...f.timers.values()][0];poll();await f.respond(both);
+ assert.equal(f.get('claude-connected').hidden,false);assert.equal(f.get('chatgpt-connected').hidden,false);
+ const select=f.get('choose-claude').onclick();await f.respond(both);assert.equal(f.posts.at(-1).method,'provider');assert.equal(f.posts.at(-1).params.provider,'claude');await f.respond({...f.state,provider:'claude'});await select;
+ assert.equal(f.get('choose-claude')['aria-pressed'],'true');assert.equal(f.get('connect-model').textContent,'Continue');
+ assert.equal(f.posts.filter(p=>p.method==='claudeLogin').length,1);
+});
+test('a stale connection is rechecked on Continue and cannot advance after sign-out',async()=>{
+ const f=await fixture(source,{onboarding:{stage:'connect',draft:'',plan:''}},{chatgpt:{connected:true,checked:true},claude:{connected:false,checked:true}});
+ const task=f.get('connect-model').onclick();await f.respond({chatgpt:{connected:false,checked:true},claude:{connected:false,checked:true}});
+ assert.equal(f.posts.at(-1).method,'login');assert.ok(!f.posts.some(p=>p.method==='modelReady'));
+ await f.respond({url:'https://auth.openai.com/synthetic'});assert.equal(f.posts.at(-1).method,'openAuth');await f.respond({});await f.respond({chatgpt:{connected:false,checked:true},claude:{connected:false,checked:true}});await task;
+ assert.equal(f.get('chatgpt-connected').hidden,true);
+});
+async function coalescedChecks(code){
+ const f=await fixture(code,{onboarding:{stage:'connect',draft:'',plan:''}});
+ const before=f.posts.filter(p=>p.method==='modelAccounts').length;
+ f.events.focus();f.events.focus();f.window.focusReceive({event:'accountChanged'});
+ assert.equal(f.posts.filter(p=>p.method==='modelAccounts').length,before+1,'overlapping status reads must share one request');
+ await f.respond({chatgpt:{connected:true,checked:true},claude:{connected:false,checked:true}});
+}
+test('focus and login notifications share an in-flight account check',()=>coalescedChecks(source));
+test('mutation proof: removing account-check coalescing fires the negative test',async()=>{
+ await assert.rejects(coalescedChecks(source.replace('if(modelCheck)return modelCheck;','')),/overlapping status reads/);
+});
+test('Continue uses the available Claude account when ChatGPT cannot be checked',async()=>{
+ const accounts={chatgpt:{connected:false,checked:false},claude:{connected:true,checked:true}};
+ const f=await fixture(source,{onboarding:{stage:'connect',draft:'',plan:''}},accounts);
+ assert.equal(f.get('connect-model').textContent,'Continue');assert.equal(f.get('choose-claude')['aria-pressed'],'true');
+ const task=f.get('connect-model').onclick();await f.respond(accounts);await f.respond(f.state);
+ assert.equal(f.posts.at(-1).method,'provider');assert.equal(f.posts.at(-1).params.provider,'claude');
+ await f.respond({...f.state,provider:'claude'});assert.equal(f.posts.at(-1).method,'modelReady');await f.respond({...f.state,provider:'claude',onboarding:{stage:'problem',draft:'',plan:''}});await task;
+ assert.ok(!f.posts.some(p=>p.method==='login'||p.method==='claudeLogin'));
 });

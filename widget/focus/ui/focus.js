@@ -2,6 +2,7 @@
 (() => {
   const $=id=>document.getElementById(id),pending=new Map();
   let serial=0,state={problem:null,entries:[],provider:'chatgpt'},busy=false,listening=false,approvalId=null,setupState=null,voicePrefix='',pendingResearch=null,transcribing=false;
+  let models={chatgpt:{connected:false},claude:{connected:false}},modelsChecked=false,modelCheck=null,modelTimer=null,accountAction=false;
   function native(method,params={}) {
     return new Promise((resolve,reject)=>{
       if(!window.webkit?.messageHandlers?.focus){reject(new Error('Open the onejob desktop app to save notes and connect your AI.'));return;}
@@ -18,7 +19,7 @@
     else if(message.event==='voiceSetup') {$('voice-setup-status').textContent=message.message;}
     else if(message.event==='speech') { /* Native speech has no in-window avatar. */ }
     else if(message.event==='error') error(new Error(message.message));
-    else if(message.event==='accountChanged') refreshAccount();
+    else if(message.event==='accountChanged') refreshModels();
     else if(message.event==='runProgress') {status(message.message);$('research-progress').textContent=message.message;}
     else if(message.event==='jobSelected') {render(message.state);status('');}
     else if(message.event==='toolApproval') {approvalId=message.id;$('tool-description').textContent=message.tool+' · '+message.connection+' → '+message.destination;$('tool-notice').textContent=message.notice;$('tool-arguments').textContent=JSON.stringify(message.arguments,null,2)+(message.preview?'\n\nPage excerpt (untrusted content):\n'+message.preview:'');$('approve-tool').disabled=false;$('decline-tool').disabled=false;$('tool-dialog').showModal();status('Waiting for your approval.');}
@@ -74,7 +75,42 @@
   $('refresh-setup').onclick=refreshSetup;$('open-aside').onclick=()=>fire('openAside');
   $('browser-form').onsubmit=async event=>{event.preventDefault();try{await act('aside.connect',{profile:$('browser-profile').value||setupState?.profiles[0],privacyConfirmed:$('browser-consent').checked});await refreshSetup();renderTools(await native('state'));if(pendingResearch)await runPendingResearch();}catch(err){$('browser-status').textContent=err.message;}};
   function providerView(){$('chatgpt-settings').hidden=$('provider').value!=='chatgpt';$('claude-settings').hidden=$('provider').value!=='claude';}
-  async function refreshAccount(){try{const a=await native('account');$('account-status').textContent=a.connected?'Connected to ChatGPT'+(a.plan?' · '+a.plan:''):'Not connected yet.';$('login').hidden=a.connected;$('logout').hidden=!a.connected;$('settings').textContent=a.connected?'AI connected ↗':'Connect your AI ↗';}catch(e){$('account-status').textContent=e.message;}}
+  function readyProvider(){return models[state.provider]?.connected?state.provider:['chatgpt','claude'].find(provider=>models[provider]?.connected);}
+  function renderAccounts(){
+    const selected=readyProvider()||state.provider;
+    for(const provider of ['chatgpt','claude']){
+      const connected=models[provider]?.connected===true,name=provider==='claude'?'Claude':'ChatGPT';
+      $('choose-'+provider).setAttribute('aria-pressed',String(provider===selected));
+      $('choose-'+provider).setAttribute('aria-label',name+(connected?', connected':', sign in'));
+      $('choose-'+provider).title=name+(connected?' · Connected':' · Sign in');
+      $('choose-'+provider).disabled=accountAction;
+      $(provider+'-connected').hidden=!connected;
+    }
+    $('connect-model').textContent=readyProvider()?'Continue':modelsChecked?'Sign in with '+(state.provider==='claude'?'Claude':'ChatGPT'):'Checking accounts…';
+    $('connect-model').disabled=accountAction||!modelsChecked;
+    $('account-status').textContent=models.chatgpt.connected?'Connected to ChatGPT':models.chatgpt.checked===false?'Could not check ChatGPT.':'Not connected yet.';
+    $('login').hidden=!!models.chatgpt.connected;$('logout').hidden=!models.chatgpt.connected;
+    $('settings').textContent=readyProvider()?'AI connected ↗':'Connect your AI ↗';
+  }
+  function scheduleModelCheck(){
+    clearTimeout(modelTimer);
+    if(state.onboarding?.stage==='connect')modelTimer=setTimeout(refreshModels,2500);
+  }
+  function refreshModels(){
+    if(modelCheck)return modelCheck;
+    clearTimeout(modelTimer);
+    modelCheck=native('modelAccounts').then(result=>{models=result;modelsChecked=true;})
+      .catch(error=>{models={chatgpt:{connected:false,checked:false},claude:{connected:false,checked:false}};modelsChecked=true;status('Could not check your AI accounts. Retrying…');})
+      .finally(()=>{modelCheck=null;renderAccounts();scheduleModelCheck();});
+    return modelCheck;
+  }
+  async function refreshAccount(){await refreshModels();}
+  async function signIn(provider){
+    if(provider==='claude')await native('claudeLogin');
+    else {const login=await act('login');await native('openAuth',{url:login.url});}
+    status('Finish signing in. This screen will update automatically.');
+    await refreshModels();
+  }
   $('composer').onsubmit=async event=>{
     event.preventDefault();if(busy||transcribing)return;
     fire('stopSpeech');if(listening){transcribing=true;$('send').disabled=true;fire('stopListening');return;}
@@ -133,19 +169,30 @@
     $('subhead').textContent=({connect:'',problem:'Write it out or talk it through. Messy is fine.',research:'Finding the context that could change the plan.',plan:'Read it through. We’ll take it one step at a time.',work:''})[step];
     $('send').firstChild.textContent=step==='problem'?'Research my problem ':'Send ';
     $('send-note').textContent=step==='problem'?'Your words and relevant context go to your chosen AI.':$('send-note').textContent;
-    for(const provider of ['chatgpt','claude'])$('choose-'+provider).setAttribute('aria-pressed',String(provider===state.provider));
-    $('connect-model').textContent=state.provider==='claude'?'Continue with Claude':'Continue with ChatGPT';
+    renderAccounts();scheduleModelCheck();
     $('plan-text').textContent=state.onboarding?.plan||'';
   }
   $('notes-toggle').onclick=()=>{$('notebook').hidden=!$('notebook').hidden;$('layout').classList.toggle('with-notes',!$('notebook').hidden);};
-  for(const provider of ['chatgpt','claude'])$('choose-'+provider).onclick=()=>act('provider',{provider}).then(render).catch(error);
+  for(const provider of ['chatgpt','claude'])$('choose-'+provider).onclick=async()=>{
+    accountAction=true;renderAccounts();
+    try {
+      await refreshModels();
+      if(models[provider]?.connected){render(await act('provider',{provider}));}
+      else {
+        if(!readyProvider())render(await act('provider',{provider}));
+        await signIn(provider);
+      }
+    }catch(err){error(err);}finally{accountAction=false;renderAccounts();}
+  };
   $('connect-model').onclick=async()=>{
-    const button=$('connect-model');button.disabled=true;
-    try {render(await act('openJob'));const account=await act('modelStatus');
-      if(account.connected){render(await act('modelReady'));status('Describe it in your own words.');}
-      else if(state.provider==='claude'){await native('claudeLogin');button.textContent='I’ve signed in · Continue';}
-      else{const login=await act('login');await native('openAuth',{url:login.url});button.textContent='I’ve signed in · Continue';}
-    }catch(err){error(err);}finally{button.disabled=false;}
+    accountAction=true;renderAccounts();
+    try {
+      await refreshModels();const provider=readyProvider();
+      if(provider){
+        render(await act('openJob'));render(await act('provider',{provider}));
+        render(await act('modelReady'));status('Describe it in your own words.');
+      }else await signIn(state.provider);
+    }catch(err){error(err);}finally{accountAction=false;renderAccounts();}
   };
   async function runPendingResearch(){
     const text=pendingResearch;if(!text)return;pendingResearch=null;
@@ -158,5 +205,6 @@
   $('research-stop').onclick=()=>fire('stop');
   $('accept-plan').onclick=()=>act('acceptPlan').then(render).catch(error);
   $('revise-plan').onclick=()=>act('reviseProblem').then(s=>{render(s);$('message').value=s.onboarding.draft;}).catch(error);
-  native('openJob').then(s=>{render(s);refreshSetup();}).catch(error);
+  window.addEventListener('focus',()=>{if(state.onboarding?.stage==='connect')refreshModels();});
+  native('openJob').then(s=>{render(s);refreshModels();refreshSetup();}).catch(error);
 })();
