@@ -209,3 +209,35 @@ removes the helper sandbox to prove its negative control works. Mutation tests
 break protections in temporary copies and require the relevant
 negative tests to fail. No credentials or personal problem content belongs in
 this public repository.
+
+### Focused onboarding and desktop jobs (0.4)
+
+Create a job from the onejob menu-bar dropdown or File → New onejob. A native
+New onejob service is also registered for macOS Services menus (including Finder;
+macOS may require enabling the service in Keyboard settings). Each unarchived job
+has a dedicated left-edge orb; overflow forms another column. Closing the main
+window leaves these available. Quit from the menu to exit.
+
+Onboarding shows connect, problem, research, and plan in the existing window.
+Research starts only after submitting a problem. Missing browser permission is
+requested inside the research step; using only supplied context produces a
+preliminary plan. The tool loop still requires exact external-action approvals.
+Notes and advanced connections remain in a drawer. Plans and drafts persist per
+job; selected jobs are independent of parked jobs and archives. Interrupted
+research returns to the saved draft after restart and does not restart itself.
+
+Optional cloud dictation uses OpenAI’s current recommended `gpt-transcribe` model.
+An OpenAI API key can be imported through a native file picker from a regular,
+owned 0600 file into this app’s existing Keychain namespace. API billing is separate
+from ChatGPT/Codex sign-in. The app never reads their credentials for transcription.
+Audio is recorded to a private temporary m4a file, read after Finish, deleted locally,
+and sent directly to OpenAI without the job’s other context. Capture is capped at
+20 minutes; the API request accepts at most 25 MB and the UI accepts 16,000 text
+characters. An interrupted process can leave a temporary recording in the app’s
+recordings directory. A failed transcription currently requires recording again.
+Without a dictation key, the prior macOS on-device recognizer is used (including
+its 60-second capture limit). These are transcription tools, not local reasoning
+models. OpenAI provider documentation: https://developers.openai.com/api/docs/guides/speech-to-text
+
+Cloud dictation is implemented but requires live API credentials for an actual
+accuracy/billing test; automated tests use synthetic audio and mocked responses.

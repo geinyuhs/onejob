@@ -8,6 +8,13 @@ import {spawnSync} from 'node:child_process';
 const source=readFileSync(new URL('../focus/Policy.swift',import.meta.url),'utf8');
 const proof=`
 func check(_ condition: Bool) { if !condition { exit(1) } }
+let voiceGeneration = UUID()
+check(NativePolicy.acceptTranscript(current:voiceGeneration,incoming:voiceGeneration))
+check(!NativePolicy.acceptTranscript(current:nil,incoming:voiceGeneration))
+check(!NativePolicy.acceptTranscript(current:UUID(),incoming:voiceGeneration))
+check(NativePolicy.canSwitchJob(listening:false,transcribing:false))
+check(!NativePolicy.canSwitchJob(listening:true,transcribing:false))
+check(!NativePolicy.canSwitchJob(listening:false,transcribing:true))
 let page=URL(fileURLWithPath:"/tmp/synthetic/index.html")
 check(NativePolicy.trustedPage(page, expected:page, mainFrame:true))
 check(!NativePolicy.trustedPage(page, expected:page, mainFrame:false))
@@ -29,6 +36,8 @@ test('native trust, login, and recording policy fires; each broken policy fails'
  const dir=mkdtempSync(join(tmpdir(),'onejob-native-'));t.after(()=>rmSync(dir,{recursive:true,force:true}));
  const variants=[
   [source,0],
+  [source.replace('current == incoming','true'),1],
+  [source.replace('!listening && !transcribing','true'),1],
   [source.replace('mainFrame && url?.isFileURL == true && url?.standardizedFileURL == expected?.standardizedFileURL','true'),1],
   [source.replace('else { return nil }','else { return URL(string:"https://chatgpt.com") }'),1],
   [source.replace('["mcp.notion.com", "mcp.linear.app"]','["mcp.notion.com", "mcp.linear.app", "attacker.invalid"]'),1],

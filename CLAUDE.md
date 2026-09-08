@@ -1,3 +1,15 @@
+## onejob onboarding update — 2026-09-07
+
+The user requested multiple independent jobs, left-edge desktop orbs and a focused
+connect → describe → research → plan flow. The selected job alone supplies model
+context. User-submitted brain dumps explicitly start research through the existing
+reviewed tool loop. No background research on launch or job switching.
+The user requested accurate dictation. Optional OpenAI gpt-transcribe receives only
+user-recorded audio, directly, using a separate API key explicitly imported from a
+private 0600 file into this app’s Keychain. Never reuse subscription credentials.
+No other transcription processor is authorized by default. macOS on-device speech
+remains the fallback when OpenAI dictation is not configured.
+
 ## onejob fork — 2026-09-05
 
 The user requested browser-first setup: detect Aside and its local profiles, reuse

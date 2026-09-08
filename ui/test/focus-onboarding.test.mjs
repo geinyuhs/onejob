@@ -1,0 +1,40 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {mkdtempSync,rmSync,cpSync,readFileSync,writeFileSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {pathToFileURL} from 'node:url';
+import {ProblemStore} from '../server/focus/store.mjs';
+import {ProblemService} from '../server/focus/service.mjs';
+function fixture(t,Service=ProblemService){const dir=mkdtempSync(join(tmpdir(),'onejob-flow-'));const store=new ProblemStore(join(dir,'test.sqlite'));t.after(()=>{store.close();rmSync(dir,{recursive:true,force:true});});let connected=true;const calls=[];const clients={chatgpt:{account:async()=>({connected}),answer:async context=>{calls.push(context);return {reply:'A synthetic plan based on the supplied context.',memories:[]};}}};return {store,clients,calls,service:new Service(store,clients),setConnected:v=>connected=v};}
+test('new jobs persist independently; switching scopes context and resumes the saved stage',async t=>{
+ const f=fixture(t),a=await f.service.call('newJob');assert.equal(a.onboarding.stage,'connect');assert.equal(a.entries.length,0);
+ await f.service.call('modelReady');await f.service.call('research',{text:'Painting a mural.\n'.repeat(100)});const plan=f.service.snapshot();assert.equal(plan.onboarding.stage,'plan');assert.match(plan.onboarding.plan,/synthetic/);assert.equal(f.calls[0].phase,'research');
+ const b=await f.service.call('newJob');assert.equal(b.jobs.length,2);assert.equal(b.entries.length,0);assert.equal(b.archives.length,0);
+ await f.service.call('selectJob',{id:a.problem.id});assert.equal(f.service.snapshot().onboarding.stage,'plan');assert.match(f.store.context('mural').recent[0].text,/mural/);
+ await f.service.call('acceptPlan');assert.equal(f.service.snapshot().onboarding.stage,'work');
+ await f.service.call('selectJob',{id:b.problem.id});assert.equal(f.store.retrieve('mural').length,0);
+});
+test('failed research preserves the full draft for retry and does not invent a plan',async t=>{const f=fixture(t);await f.service.call('newJob');await f.service.call('modelReady');f.clients.chatgpt.answer=async()=>{throw new Error('offline');};await assert.rejects(f.service.call('research',{text:'Synthetic full draft'}),/offline/);assert.equal(f.service.snapshot().onboarding.stage,'problem');assert.equal(f.service.snapshot().onboarding.draft,'Synthetic full draft');assert.equal(f.service.snapshot().onboarding.plan,'');});
+test('restart recovers interrupted research without auto-dispatching a model',async t=>{const f=fixture(t);await f.service.call('newJob');f.service.flow.describe('Synthetic draft');const reopened=new ProblemService(f.store,f.clients);assert.equal(reopened.snapshot().onboarding.stage,'problem');assert.equal(f.calls.length,0);});
+async function signedOut(t,Service){const f=fixture(t,Service);await f.service.call('newJob');f.setConnected(false);await assert.rejects(f.service.call('modelReady'),/Sign in/);}
+async function researchGate(t,Service){const f=fixture(t,Service);await f.service.call('newJob');await assert.rejects(f.service.call('research',{text:'Synthetic'}),/Connect/);}
+async function planGate(t,Service){const f=fixture(t,Service);await f.service.call('newJob');await assert.rejects(f.service.call('acceptPlan'),/Review/);}
+async function reviseGate(t,Service){const f=fixture(t,Service);await f.service.call('newJob');await assert.rejects(f.service.call('reviseProblem'),/Connect/);}
+async function busyGate(t,Service){const f=fixture(t,Service);await f.service.call('newJob');await f.service.call('modelReady');let finish;f.clients.chatgpt.answer=()=>new Promise(r=>finish=r);const run=f.service.call('research',{text:'Synthetic'});try{await assert.rejects(f.service.call('newJob'),/Stop/);}finally{finish({reply:'Synthetic plan',memories:[]});await run.catch(error=>{});}}
+async function missingJob(t,Service){const f=fixture(t,Service);await f.service.call('newJob');await assert.rejects(f.service.call('selectJob',{id:'missing'}),/not found/);}
+async function staleAccount(t,Service){const f=fixture(t,Service);await f.service.call('newJob');let resolve;f.clients.chatgpt.account=()=>new Promise(r=>resolve=r);const pending=f.service.call('modelReady');await f.service.call('newJob');resolve({connected:true});await assert.rejects(pending,/selection changed/);}
+for(const [name,scenario,file,guard] of [
+ ['signed-out model',signedOut,'service.mjs','if(!account.connected)'],
+ ['research before connection',researchGate,'service.mjs',"if(this.flow.state().stage!=='problem')"],
+ ['accept before plan',planGate,'service.mjs',"if(this.flow.state().stage!=='plan')"],
+ ['revise before connection',reviseGate,'service.mjs',"if(!['plan','work','problem'].includes(this.flow.state().stage))"],
+ ['switch during research',busyGate,'service.mjs',"if(this.job)throw new ProblemError('Stop the current run before switching jobs.');"],
+ ['unknown job',missingJob,'onboarding.mjs','if(!row)'],
+ ['account checked for another job',staleAccount,'service.mjs',"if(this.store.active()?.id!==id || (this.store.config()?.provider||'chatgpt')!==provider)"],
+]) {
+ test(name+' is blocked',t=>scenario(t,ProblemService));
+ test('mutation proof: '+name,async t=>{const dir=mkdtempSync(join(tmpdir(),'onejob-flow-mutant-'));t.after(()=>rmSync(dir,{recursive:true,force:true}));cpSync(new URL('../server/focus/',import.meta.url),dir,{recursive:true,filter:path=>!path.includes('node_modules')});const path=join(dir,file),s=readFileSync(path,'utf8');assert.ok(s.includes(guard));writeFileSync(path,s.replace(guard,guard.endsWith(';')?'':'if(false)'));const {ProblemService:Broken}=await import(pathToFileURL(join(dir,'service.mjs')));await assert.rejects(scenario(t,Broken));});
+}
+test('drafts persist and delayed writes cannot edit another job',async t=>{const f=fixture(t);const a=await f.service.call('newJob');await f.service.call('modelReady');await f.service.call('saveDraft',{id:a.problem.id,text:'Synthetic unsent draft'});const b=await f.service.call('newJob');await assert.rejects(f.service.call('saveDraft',{id:a.problem.id,text:'Late draft'}),/another job/);assert.equal(f.service.snapshot().onboarding.draft,'');await f.service.call('selectJob',{id:a.problem.id});assert.equal(f.service.snapshot().onboarding.draft,'Synthetic unsent draft');});
+test('mutation proof: delayed draft guard prevents cross-job writes',async t=>{const dir=mkdtempSync(join(tmpdir(),'onejob-draft-mutant-'));t.after(()=>rmSync(dir,{recursive:true,force:true}));cpSync(new URL('../server/focus/',import.meta.url),dir,{recursive:true,filter:path=>!path.includes('node_modules')});const path=join(dir,'service.mjs'),source=readFileSync(path,'utf8');writeFileSync(path,source.replace('if(this.store.active()?.id!==p.id)','if(false)'));const {ProblemService:Broken}=await import(pathToFileURL(path));const f=fixture(t,Broken),a=await f.service.call('newJob');await f.service.call('newJob');await assert.rejects(async()=>assert.rejects(f.service.call('saveDraft',{id:a.problem.id,text:'Late draft'}),/another job/));});

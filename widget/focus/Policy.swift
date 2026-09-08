@@ -1,6 +1,8 @@
 import Foundation
 
 enum NativePolicy {
+    static func acceptTranscript(current: UUID?, incoming: UUID) -> Bool { current == incoming }
+    static func canSwitchJob(listening: Bool, transcribing: Bool) -> Bool { !listening && !transcribing }
     static func trustedPage(_ url: URL?, expected: URL?, mainFrame: Bool) -> Bool {
         mainFrame && url?.isFileURL == true && url?.standardizedFileURL == expected?.standardizedFileURL
     }

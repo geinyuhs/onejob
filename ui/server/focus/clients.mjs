@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process';
+import { spawn, execFile } from 'node:child_process';
 import { mkdirSync, accessSync, constants } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
@@ -113,6 +113,13 @@ export class CodexClient extends EventEmitter {
 
 export class ClaudeClient {
   constructor(directory,binary=executable('claude')) {this.directory=directory;this.binary=binary;}
+  async account() {
+    if(!this.binary)return {connected:false};
+    return new Promise(resolve=>execFile(this.binary,['auth','status','--json'],{env:clientEnvironment(),timeout:15000,maxBuffer:32000},(error,stdout)=>{
+      if(error){resolve({connected:false});return;}
+      try{resolve({connected:JSON.parse(stdout).loggedIn===true});}catch(error){resolve({connected:false});}
+    }));
+  }
   async answer(context,signal) {
     if (!this.binary) throw new ProblemError('Install and sign in to official Claude Code first.');
     mkdirSync(this.directory,{recursive:true,mode:0o700});

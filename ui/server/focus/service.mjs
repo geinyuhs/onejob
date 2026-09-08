@@ -1,10 +1,11 @@
 import { ProblemError, requiredText } from './store.mjs';
+import {Onboarding} from './onboarding.mjs';
 import {randomUUID} from 'node:crypto';
 
 export class ProblemService {
-  constructor(store,clients,{folders=null,search=null,tools=null,workspace=null,setup=null,emit=()=>{}}={}) {this.store=store;this.clients=clients;this.job=null;this.folders=folders;this.search=search;this.tools=tools;this.workspace=workspace;this.setup=setup;this.emit=emit;}
+  constructor(store,clients,{folders=null,search=null,tools=null,workspace=null,setup=null,transcription=null,emit=()=>{}}={}) {this.transcription=transcription;this.store=store;this.flow=new Onboarding(store);this.clients=clients;this.job=null;this.folders=folders;this.search=search;this.tools=tools;this.workspace=workspace;this.setup=setup;this.emit=emit;}
   snapshot() {const workspacePath=this.workspace?.ensure();return {workspacePath,...this.stateSnapshot()};}
-  stateSnapshot() {return {...this.store.snapshot(),provider:this.store.config()?.provider || 'chatgpt',searchMode:this.search?.mode || 'keyword',folderScan:this.folders?.lastScan || null,...(this.tools?.snapshot()||{})};}
+  stateSnapshot() {return {...this.store.snapshot(),onboarding:this.flow.state(),jobs:this.flow.list(),provider:this.store.config()?.provider || 'chatgpt',searchMode:this.search?.mode || 'keyword',folderScan:this.folders?.lastScan || null,...(this.tools?.snapshot()||{})};}
   syncFolders() {
     this.workspace?.ensure();
     const scan=this.folders?.sync();
@@ -13,6 +14,34 @@ export class ProblemService {
   }
   async call(method,p={}) {
     switch(method) {
+      case 'voiceStatus': return this.transcription.status();
+      case 'importVoiceKey': return this.transcription.importKey(p.path);
+      case 'transcribe': return this.transcription.transcribe(p.audio);
+      case 'newJob':
+      case 'selectJob':
+        if(this.job)throw new ProblemError('Stop the current run before switching jobs.');
+        if(method==='newJob')this.flow.create();else this.flow.select(p.id);
+        return this.snapshot();
+      case 'saveDraft':
+        if(this.store.active()?.id!==p.id)throw new ProblemError('This draft belongs to another job.');
+        this.store.db.prepare('UPDATE job_flow SET draft=? WHERE problem_id=?').run(typeof p.text==='string'?p.text.slice(0,16000):'',p.id);return {saved:true};
+      case 'modelReady': {
+        const id=this.store.requireActive().id,provider=this.store.config()?.provider||'chatgpt';
+        const account=await this.clients[provider].account();
+        if(!account.connected)throw new ProblemError('Sign in to your selected AI first.');
+        if(this.store.active()?.id!==id || (this.store.config()?.provider||'chatgpt')!==provider)throw new ProblemError('Your selection changed. Try again.');
+        this.flow.stage('problem');return this.snapshot();
+      }
+      case 'research': {
+        if(this.job)throw new ProblemError('An answer is already running.');
+        if(this.flow.state().stage!=='problem')throw new ProblemError('Connect your AI and describe the problem first.');
+        this.flow.describe(p.text);
+        try{await this.send(p.text);this.flow.finish();return this.snapshot();}
+        catch(error){this.flow.stage('problem');throw error;}
+      }
+      case 'acceptPlan':
+        if(this.flow.state().stage!=='plan')throw new ProblemError('Review a completed plan first.');
+        this.flow.stage('work');return this.snapshot();
       case 'state': return this.snapshot();
       case 'showWorkspace': return {workspaceToOpen:this.workspace.ensure()};
       case 'setup': return this.setup.inspect();
@@ -38,6 +67,11 @@ export class ProblemService {
         if(!['chatgpt','claude'].includes(p.provider)) throw new ProblemError('Unknown provider.');
         if(this.job) throw new ProblemError('Stop the current answer before changing providers.');
         this.store.setConfig({provider:p.provider});return this.snapshot();
+      case 'reviseProblem':
+        if(!['plan','work','problem'].includes(this.flow.state().stage))throw new ProblemError('Connect your AI first.');
+        if(this.job)throw new ProblemError('Stop the current run first.');
+        this.flow.stage('problem');return this.snapshot();
+      case 'modelStatus': return this.clients[this.store.config()?.provider||'chatgpt'].account();
       case 'account': return this.clients.chatgpt.account();
       case 'login': return this.clients.chatgpt.login();
       case 'logout': if(this.job) throw new ProblemError('Stop the current answer before signing out.');return this.clients.chatgpt.logout();
@@ -49,10 +83,11 @@ export class ProblemService {
   stop() { if(this.job){this.job.abort();if(this.store.active()) this.store.advance();} }
   async send(text) {
     if(this.job) throw new ProblemError('An answer is already running. Stop it before sending another.');
-    text=requiredText(text,8000);
+    text=requiredText(text,16000);
     this.syncFolders();
     this.store.requireActive();this.store.add('user',text);const problem=this.store.advance();
     const context=this.store.context(text);
+    context.phase=this.flow.state().stage;
     if (this.search) context.evidence=this.search.retrieve(`${text} ${problem.title} ${problem.brief.openQuestion}`);
     const sources=[...context.evidence,...context.recent.filter(e=>e.kind==='user')];
     const controller=new AbortController();this.job=controller;

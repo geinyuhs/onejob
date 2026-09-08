@@ -1,7 +1,7 @@
 /* Native owns IO. Provider and source text are always inserted as text nodes. */
 (() => {
   const $=id=>document.getElementById(id),pending=new Map();
-  let serial=0,state={problem:null,entries:[],provider:'chatgpt'},busy=false,listening=false,approvalId=null,setupState=null;
+  let serial=0,state={problem:null,entries:[],provider:'chatgpt'},busy=false,listening=false,approvalId=null,setupState=null,voicePrefix='',pendingResearch=null,transcribing=false;
   function native(method,params={}) {
     return new Promise((resolve,reject)=>{
       if(!window.webkit?.messageHandlers?.focus){reject(new Error('Open the onejob desktop app to save notes and connect your AI.'));return;}
@@ -14,12 +14,14 @@
   async function act(method,params){try{const result=await native(method,params);return result;}catch(e){error(e);throw e;}}
   function fire(method,params){native(method,params).catch(error);}
   window.focusReceive=message=>{
-    if(message.event==='transcript') {$('message').value=message.text;status('Review your words, then send.');}
-    else if(message.event==='voice') {listening=message.listening;$('mic').textContent=listening?'◉ Finish speaking':'◉ Speak';orb(listening?'listening':'notify');status(message.message);}
+    if(message.event==='transcript') {$('message').value=[voicePrefix,message.text].filter(Boolean).join(' ');status('Review your words, then send.');saveDraft();}
+    else if(message.event==='voice') {listening=message.listening;transcribing=!!message.transcribing;$('send').disabled=busy||transcribing;$('mic').disabled=transcribing;$('send').firstChild.textContent=listening?'Finish speaking ':state.onboarding?.stage==='problem'?'Research my problem ':'Send ';$('mic').textContent=listening?'◉ Finish speaking':'◉ Speak';orb(listening?'listening':'notify');status(message.message);}
+    else if(message.event==='voiceSetup') {$('voice-setup-status').textContent=message.message;}
     else if(message.event==='speech') {orb(message.speaking?'talking':'notify');}
     else if(message.event==='error') error(new Error(message.message));
     else if(message.event==='accountChanged') refreshAccount();
-    else if(message.event==='runProgress') status(message.message);
+    else if(message.event==='runProgress') {status(message.message);$('research-progress').textContent=message.message;}
+    else if(message.event==='jobSelected') {render(message.state);status('');}
     else if(message.event==='toolApproval') {approvalId=message.id;$('tool-description').textContent=message.tool+' · '+message.connection+' → '+message.destination;$('tool-notice').textContent=message.notice;$('tool-arguments').textContent=JSON.stringify(message.arguments,null,2)+(message.preview?'\n\nPage excerpt (untrusted content):\n'+message.preview:'');$('approve-tool').disabled=false;$('decline-tool').disabled=false;$('tool-dialog').showModal();status('Waiting for your approval.');}
     else if(message.event==='setupChanged') {refreshSetup();native('state').then(renderTools).catch(error);}
     else if(message.event==='setupNotice') status(message.message);
@@ -33,6 +35,7 @@
   function render(s){
     const changed=state.problem?.id!==s.problem?.id;
     if(changed){$('matches').replaceChildren();$('search-form').reset();$('source-form').reset();}
+    if(changed){$('message').value=s.onboarding?.draft||'';voicePrefix='';pendingResearch=null;$('notebook').hidden=true;}
     state=s;renderTools(s);document.body.classList.toggle('has-problem',!!s.problem);
     $('brief-empty').hidden=!!s.problem;$('brief-form').hidden=!s.problem;
     $('source-form').querySelector('button').disabled=!s.problem;
@@ -50,6 +53,7 @@
     $('sources').replaceChildren(...s.entries.filter(e=>e.kind==='source').map(e=>{const card=node('details',undefined,'f-card');card.append(node('summary',e.title),node('p',e.text));return card;}));
     $('archives').replaceChildren(...(s.archives||[]).map(e=>{const b=node('button','Resume: '+e.title,'f-quiet');b.onclick=()=>act('restore',{id:e.id}).then(render).catch(error);return b;}));
     $('folders').replaceChildren(...(s.folders||[]).filter(folder=>folder.label!==('Job-'+s.problem?.id)).map(folder=>{const card=node('div',undefined,'f-card');card.append(node('p',folder.label));const remove=node('button','Stop syncing and forget imports','f-quiet');remove.onclick=()=>act('disconnectFolder',{id:folder.id}).then(s=>{$('matches').replaceChildren();render(s);}).catch(error);card.append(remove);return card;}));
+    renderStep();
     $('folder-status').textContent=s.folderScan?.partial?'Too many files to read. Move some out of your job folder.':s.problem?'Desktop → onejob · Updates automatically.':'Desktop → onejob. Start a problem to get its own folder.';
   }
   function renderTools(s) {
@@ -69,20 +73,30 @@
     }catch(err){$('browser-status').textContent=err.message;}
   }
   $('refresh-setup').onclick=refreshSetup;$('open-aside').onclick=()=>fire('openAside');
-  $('browser-form').onsubmit=async event=>{event.preventDefault();try{await act('aside.connect',{profile:$('browser-profile').value||setupState?.profiles[0],privacyConfirmed:$('browser-consent').checked});await refreshSetup();renderTools(await native('state'));}catch(err){$('browser-status').textContent=err.message;}};
+  $('browser-form').onsubmit=async event=>{event.preventDefault();try{await act('aside.connect',{profile:$('browser-profile').value||setupState?.profiles[0],privacyConfirmed:$('browser-consent').checked});await refreshSetup();renderTools(await native('state'));if(pendingResearch)await runPendingResearch();}catch(err){$('browser-status').textContent=err.message;}};
   function providerView(){$('chatgpt-settings').hidden=$('provider').value!=='chatgpt';$('claude-settings').hidden=$('provider').value!=='claude';}
   async function refreshAccount(){try{const a=await native('account');$('account-status').textContent=a.connected?'Connected to ChatGPT'+(a.plan?' · '+a.plan:''):'Not connected yet.';$('login').hidden=a.connected;$('logout').hidden=!a.connected;$('settings').textContent=a.connected?'AI connected ↗':'Connect your AI ↗';}catch(e){$('account-status').textContent=e.message;}}
   $('composer').onsubmit=async event=>{
-    event.preventDefault();const text=$('message').value.trim();if(!text||busy)return;
-    fire('stopSpeech');if(listening)fire('stopListening');
+    event.preventDefault();if(busy||transcribing)return;
+    fire('stopSpeech');if(listening){transcribing=true;$('send').disabled=true;fire('stopListening');return;}
+    const text=$('message').value.trim();if(!text)return;
     try{
-      if(!state.problem){render(await act('create',{title:text}));$('message').value='';status('Your problem is saved. What would a meaningful improvement look like?');return;}
-      setBusy(true);status('Thinking about your problem…');const answer=await act('send',{text});render(answer);$('message').value='';status('Saved. Pick up here whenever you’re ready.');
+      if(!state.problem)return;
+      const researching=state.onboarding?.stage==='problem';
+      if(researching && !setupState?.asideConnection){
+        pendingResearch=text;state.onboarding.stage='research';renderStep();
+        $('research-browser').hidden=false;$('browser-slot').append($('browser-card'));
+        $('research-progress').hidden=true;$('research-stop').hidden=true;return;
+      }
+      if(researching){state.onboarding.stage='research';renderStep();}
+      setBusy(true);status('Thinking about your problem…');const answer=await act(researching?'research':'send',{text});render(answer);$('message').value='';status('Saved. Pick up here whenever you’re ready.');
       if($('spoken').checked){const reply=answer.entries.filter(e=>e.kind==='assistant').at(-1);if(reply)fire('speak',{text:reply.text});}
-    }catch(e){const current=await native('state').catch(()=>state);render(current);error(e);}finally{setBusy(false);}
+    }catch(e){const current=await native('state').catch(error=>state);render(current);error(e);}finally{setBusy(false);}
   };
+  function saveDraft(){if(state.onboarding?.stage==='problem')fire('saveDraft',{id:state.problem.id,text:$('message').value});}
+  $('message').oninput=saveDraft;
   $('message').onkeydown=event=>{if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();$('composer').requestSubmit();}};
-  function toggleVoice(){if(busy)return;fire('stopSpeech');fire(listening?'stopListening':'startListening');}
+  function toggleVoice(){if(busy||transcribing)return;if(!listening)voicePrefix=$('message').value.trim();fire('stopSpeech');fire(listening?'stopListening':'startListening');}
   $('orb').onclick=toggleVoice;$('mic').onclick=toggleVoice;
   $('stop').onclick=()=>fire('stop');
   $('brief-form').onsubmit=e=>{e.preventDefault();const brief=Object.fromEntries(new FormData(e.target));act('brief',{brief}).then(s=>{render(s);status('Brief saved.');}).catch(error);};
@@ -96,13 +110,56 @@
   $('logout').onclick=()=>act('logout').then(refreshAccount).catch(error);
   $('claude-login').onclick=()=>fire('claudeLogin');
   $('archive').onclick=()=>$('archive-dialog').showModal();$('cancel-archive').onclick=()=>$('archive-dialog').close();
-  $('confirm-archive').onclick=()=>act('archive').then(s=>{$('archive-dialog').close();render(s);status('Ready for your next important problem.');}).catch(error);
+  $('confirm-archive').onclick=()=>{fire('stopListening');return act('archive').then(s=>{$('archive-dialog').close();render(s);status('Ready for your next important problem.');}).catch(error);};
   $('spoken').onchange=()=>{if(!$('spoken').checked)fire('stopSpeech');};
   $('connection-kind').onchange=()=>{const aside=$('connection-kind').value==='aside';$('aside-fields').hidden=!aside;$('service-fields').hidden=aside;};
   $('connection-form').onsubmit=async e=>{e.preventDefault();try {const kind=$('connection-kind').value;const s=await act('connection.add',{kind,name:$('connection-name').value,url:$('connection-url').value,account:kind==='aside'?$('aside-account').value:$('credential-account').value,secretRef:kind==='aside'?'':$('credential-reference').value,localBrowserOnly:$('aside-local').checked});render(s);$('connection-status').textContent='Configuration saved. Access will be tested when you approve the first tool action.';}catch(err){$('connection-status').textContent=err.message;}};
   function decideTool(approved){const id=approvalId;if(!id)return;$('approve-tool').disabled=true;$('decline-tool').disabled=true;act('approval',{id,approved}).then(()=>{$('tool-dialog').close();approvalId=null;}).catch(error);}
   $('approve-tool').onclick=()=>decideTool(true);$('decline-tool').onclick=()=>decideTool(false);$('tool-dialog').oncancel=e=>{e.preventDefault();decideTool(false);};
   $('stop-tool-run').onclick=()=>{fire('stop');$('tool-dialog').close();approvalId=null;};
+  $('voice-key').onclick=()=>fire('chooseVoiceKey');
   $('show-artifacts').onclick=()=>fire('showArtifacts');
+  function renderStep(){
+    const step=state.onboarding?.stage||(state.problem?'work':'empty');
+    document.body.dataset.step=step;document.body.classList.toggle('has-problem',step==='work');$('orb').disabled=!['problem','work'].includes(step);
+    for(const name of ['empty','connect','research','plan'])$(name+'-step').hidden=name!==step;
+    if(!pendingResearch)$('browser-home').append($('browser-card'));
+    $('research-browser').hidden=!pendingResearch;$('research-progress').hidden=!!pendingResearch;$('research-stop').hidden=!!pendingResearch;
+    $('compose-area').hidden=!['problem','work'].includes(step);
+    $('conversation').hidden=step!=='work';$('notes-toggle').hidden=!['work','plan'].includes(step);
+    if(!['work','plan'].includes(step))$('notebook').hidden=true;
+    $('layout').classList.toggle('with-notes',!$('notebook').hidden);
+    $('eyebrow').textContent=({empty:'ONE THING. YOUR FULL ATTENTION.',connect:'1 / 4 · CONNECT',problem:'2 / 4 · YOUR PROBLEM',research:'3 / 4 · RESEARCH',plan:'4 / 4 · YOUR PLAN',work:'YOUR ONEJOB'})[step];
+    const titles={empty:'One problem. A place to solve it.',connect:'First, connect your AI.',problem:'What’s the one thing you want to change?',research:'Let’s understand the whole picture.',plan:'A way forward.'};
+    if(titles[step])$('headline').textContent=titles[step];
+    $('subhead').textContent=({empty:'Create a onejob from the menu bar whenever something matters.',connect:'Bring the AI you already use.',problem:'Write it out or talk it through. Messy is fine.',research:'Finding the context that could change the plan.',plan:'Read it through. We’ll take it one step at a time.',work:''})[step];
+    $('send').firstChild.textContent=step==='problem'?'Research my problem ':'Send ';
+    $('send-note').textContent=step==='problem'?'Your words and relevant context go to your chosen AI.':$('send-note').textContent;
+    $('connect-provider').value=state.provider;
+    $('plan-text').textContent=state.onboarding?.plan||'';
+    if(step==='research')orb('processing');
+  }
+  $('new-job').onclick=()=>act('newJob').then(render).catch(error);
+  $('notes-toggle').onclick=()=>{$('notebook').hidden=!$('notebook').hidden;$('layout').classList.toggle('with-notes',!$('notebook').hidden);};
+  $('connect-provider').onchange=()=>act('provider',{provider:$('connect-provider').value}).then(s=>{render(s);$('connect-model').textContent=s.provider==='claude'?'Continue with Claude':'Continue with ChatGPT';}).catch(error);
+  $('connect-model').onclick=async()=>{
+    const button=$('connect-model');button.disabled=true;
+    try {const account=await act('modelStatus');
+      if(account.connected){render(await act('modelReady'));status('Describe it in your own words.');}
+      else if(state.provider==='claude'){await native('claudeLogin');button.textContent='I’ve signed in · Continue';}
+      else{const login=await act('login');await native('openAuth',{url:login.url});button.textContent='I’ve signed in · Continue';}
+    }catch(err){error(err);}finally{button.disabled=false;}
+  };
+  async function runPendingResearch(){
+    const text=pendingResearch;if(!text)return;pendingResearch=null;
+    $('research-browser').hidden=true;$('research-progress').hidden=false;$('research-stop').hidden=false;
+    setBusy(true);
+    try{render(await act('research',{text}));$('message').value='';status('Your plan is ready.');}
+    catch(err){render(await native('state'));error(err);}finally{setBusy(false);}
+  }
+  $('skip-browser').onclick=runPendingResearch;
+  $('research-stop').onclick=()=>fire('stop');
+  $('accept-plan').onclick=()=>act('acceptPlan').then(render).catch(error);
+  $('revise-plan').onclick=()=>act('reviseProblem').then(s=>{render(s);$('message').value=s.onboarding.draft;}).catch(error);
   native('state').then(s=>{render(s);refreshSetup();}).catch(error);
 })();

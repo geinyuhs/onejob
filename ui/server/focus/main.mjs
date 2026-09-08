@@ -10,6 +10,7 @@ import {OAuthConnections} from './tools/oauth.mjs';
 import {Keychain} from './tools/keychain.mjs';
 import {Credentials} from './tools/credentials.mjs';
 import {ServiceSetup} from './tools/setup.mjs';
+import {Transcription} from './transcription.mjs';
 import {ToolRuntime} from './tools/runtime.mjs';
 
 const directory=resolve(process.argv[2]);
@@ -22,7 +23,7 @@ const runtime=new ToolRuntime(store,directory,{search,emit:write,sync:()=>servic
 const oauth=new OAuthConnections(store,runtime.connections,new Keychain(process.argv[5]),{emit:write});
 runtime.credentials=new Credentials(null,oauth);
 const setup=new ServiceSetup(runtime.connections,oauth);
-const service=new ProblemService(store,{chatgpt:codex,claude:new ClaudeClient(join(directory,'claude-workspace'))},{folders,search,tools:runtime,workspace,setup,emit:write});
+const service=new ProblemService(store,{chatgpt:codex,claude:new ClaudeClient(join(directory,'claude-workspace'))},{folders,search,tools:runtime,workspace,setup,transcription:new Transcription(new Keychain(process.argv[5])),emit:write});
 codex.on('notification',message=>{if(['account/login/completed','account/updated'].includes(message.method))write({event:'accountChanged'});});
 const scanTimer=setInterval(()=>{
   try { const scan=service.syncFolders();if(scan?.changed)write({event:'contextChanged'}); }

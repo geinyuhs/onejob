@@ -651,11 +651,11 @@
     {
       "host": "api.openai.com",
       "kind": "frontier-client",
-      "component": "ui/server/focus/clients.mjs; widget/focus/App.swift",
+      "component": "ui/server/focus/clients.mjs; widget/focus/App.swift; ui/server/focus/transcription.mjs",
       "direction": "user-initiated",
-      "purpose": "Official provider authentication and inference for the separate onejob app",
-      "credential": "Owned by unmodified provider clients; not read by onejob",
-      "decision": "User requested Claude/OpenAI account connection on 2026-09-05. ChatGPT uses documented managed app-server authentication in a separate profile. Claude Code is invoked locally with user-owned native authentication, subject to applicable provider terms. No token extraction, account pooling, or automated background usage.",
+      "purpose": "Official provider authentication and inference for the separate onejob app; optional direct OpenAI dictation",
+      "credential": "Owned by unmodified provider clients; not read by onejob; dictation uses a separately imported OpenAI API key in macOS Keychain",
+      "decision": "User requested Claude/OpenAI account connection on 2026-09-05. ChatGPT uses documented managed app-server authentication in a separate profile. Claude Code is invoked locally with user-owned native authentication, subject to applicable provider terms. No token extraction, account pooling, or automated background usage. The user requested accurate voice dictation on 2026-09-07. gpt-transcribe receives only explicitly recorded audio using separate API billing, never subscription credentials.",
       "evidence": "widget/focus/README.md"
     },
     {
