@@ -120,31 +120,30 @@
   $('voice-key').onclick=()=>fire('chooseVoiceKey');
   $('show-artifacts').onclick=()=>fire('showArtifacts');
   function renderStep(){
-    const step=state.onboarding?.stage||(state.problem?'work':'empty');
+    const step=state.problem?(state.onboarding?.stage||'work'):'connect';
     document.body.dataset.step=step;document.body.classList.toggle('has-problem',step==='work');$('orb').disabled=!['problem','work'].includes(step);
-    for(const name of ['empty','connect','research','plan'])$(name+'-step').hidden=name!==step;
+    for(const name of ['connect','research','plan'])$(name+'-step').hidden=name!==step;
     if(!pendingResearch)$('browser-home').append($('browser-card'));
     $('research-browser').hidden=!pendingResearch;$('research-progress').hidden=!!pendingResearch;$('research-stop').hidden=!!pendingResearch;
     $('compose-area').hidden=!['problem','work'].includes(step);
     $('conversation').hidden=step!=='work';$('notes-toggle').hidden=!['work','plan'].includes(step);
     if(!['work','plan'].includes(step))$('notebook').hidden=true;
     $('layout').classList.toggle('with-notes',!$('notebook').hidden);
-    $('eyebrow').textContent=({empty:'ONE THING. YOUR FULL ATTENTION.',connect:'1 / 4 · CONNECT',problem:'2 / 4 · YOUR PROBLEM',research:'3 / 4 · RESEARCH',plan:'4 / 4 · YOUR PLAN',work:'YOUR ONEJOB'})[step];
-    const titles={empty:'One problem. A place to solve it.',connect:'First, connect your AI.',problem:'What’s the one thing you want to change?',research:'Let’s understand the whole picture.',plan:'A way forward.'};
+    $('eyebrow').textContent=({connect:'1 / 4 · CONNECT',problem:'2 / 4 · YOUR PROBLEM',research:'3 / 4 · RESEARCH',plan:'4 / 4 · YOUR PLAN',work:'YOUR ONEJOB'})[step];
+    const titles={connect:'First, connect your AI.',problem:'What’s the one thing you want to change?',research:'Let’s understand the whole picture.',plan:'A way forward.'};
     if(titles[step])$('headline').textContent=titles[step];
-    $('subhead').textContent=({empty:'Create a onejob from the menu bar whenever something matters.',connect:'Bring the AI you already use.',problem:'Write it out or talk it through. Messy is fine.',research:'Finding the context that could change the plan.',plan:'Read it through. We’ll take it one step at a time.',work:''})[step];
+    $('subhead').textContent=({connect:'Bring the AI you already use.',problem:'Write it out or talk it through. Messy is fine.',research:'Finding the context that could change the plan.',plan:'Read it through. We’ll take it one step at a time.',work:''})[step];
     $('send').firstChild.textContent=step==='problem'?'Research my problem ':'Send ';
     $('send-note').textContent=step==='problem'?'Your words and relevant context go to your chosen AI.':$('send-note').textContent;
     $('connect-provider').value=state.provider;
     $('plan-text').textContent=state.onboarding?.plan||'';
     if(step==='research')orb('processing');
   }
-  $('new-job').onclick=()=>act('newJob').then(render).catch(error);
   $('notes-toggle').onclick=()=>{$('notebook').hidden=!$('notebook').hidden;$('layout').classList.toggle('with-notes',!$('notebook').hidden);};
   $('connect-provider').onchange=()=>act('provider',{provider:$('connect-provider').value}).then(s=>{render(s);$('connect-model').textContent=s.provider==='claude'?'Continue with Claude':'Continue with ChatGPT';}).catch(error);
   $('connect-model').onclick=async()=>{
     const button=$('connect-model');button.disabled=true;
-    try {const account=await act('modelStatus');
+    try {render(await act('openJob'));const account=await act('modelStatus');
       if(account.connected){render(await act('modelReady'));status('Describe it in your own words.');}
       else if(state.provider==='claude'){await native('claudeLogin');button.textContent='I’ve signed in · Continue';}
       else{const login=await act('login');await native('openAuth',{url:login.url});button.textContent='I’ve signed in · Continue';}
@@ -161,5 +160,5 @@
   $('research-stop').onclick=()=>fire('stop');
   $('accept-plan').onclick=()=>act('acceptPlan').then(render).catch(error);
   $('revise-plan').onclick=()=>act('reviseProblem').then(s=>{render(s);$('message').value=s.onboarding.draft;}).catch(error);
-  native('state').then(s=>{render(s);refreshSetup();}).catch(error);
+  native('openJob').then(s=>{render(s);refreshSetup();}).catch(error);
 })();

@@ -38,3 +38,18 @@ for(const [name,scenario,file,guard] of [
 }
 test('drafts persist and delayed writes cannot edit another job',async t=>{const f=fixture(t);const a=await f.service.call('newJob');await f.service.call('modelReady');await f.service.call('saveDraft',{id:a.problem.id,text:'Synthetic unsent draft'});const b=await f.service.call('newJob');await assert.rejects(f.service.call('saveDraft',{id:a.problem.id,text:'Late draft'}),/another job/);assert.equal(f.service.snapshot().onboarding.draft,'');await f.service.call('selectJob',{id:a.problem.id});assert.equal(f.service.snapshot().onboarding.draft,'Synthetic unsent draft');});
 test('mutation proof: delayed draft guard prevents cross-job writes',async t=>{const dir=mkdtempSync(join(tmpdir(),'onejob-draft-mutant-'));t.after(()=>rmSync(dir,{recursive:true,force:true}));cpSync(new URL('../server/focus/',import.meta.url),dir,{recursive:true,filter:path=>!path.includes('node_modules')});const path=join(dir,'service.mjs'),source=readFileSync(path,'utf8');writeFileSync(path,source.replace('if(this.store.active()?.id!==p.id)','if(false)'));const {ProblemService:Broken}=await import(pathToFileURL(path));const f=fixture(t,Broken),a=await f.service.call('newJob');await f.service.call('newJob');await assert.rejects(async()=>assert.rejects(f.service.call('saveDraft',{id:a.problem.id,text:'Late draft'}),/another job/));});
+
+async function openScenario(t,Service=ProblemService){
+ const f=fixture(t,Service);
+ const first=await f.service.call('openJob');assert.equal(first.onboarding.stage,'connect');assert.ok(first.problem);
+ await f.service.call('modelReady');await f.service.call('saveDraft',{id:first.problem.id,text:'Synthetic saved draft'});
+ const reopened=await f.service.call('openJob');assert.equal(reopened.problem.id,first.problem.id,'opening must keep the selected job');assert.equal(reopened.onboarding.stage,'problem');assert.equal(reopened.onboarding.draft,'Synthetic saved draft');assert.equal(reopened.jobs.length,1);
+ const next=await f.service.call('newJob');const menuOpen=await f.service.call('openJob');assert.equal(menuOpen.problem.id,next.problem.id);assert.equal(menuOpen.jobs.length,2);
+}
+test('opening creates the first job directly and preserves existing jobs and drafts',t=>openScenario(t));
+test('mutation proof: opening must not create a duplicate job',async t=>{
+ const dir=mkdtempSync(join(tmpdir(),'onejob-open-mutant-'));t.after(()=>rmSync(dir,{recursive:true,force:true}));
+ cpSync(new URL('../server/focus/',import.meta.url),dir,{recursive:true,filter:path=>!path.includes('node_modules')});
+ const path=join(dir,'service.mjs'),s=readFileSync(path,'utf8');const guard='if(!this.store.active())this.flow.create();';assert.ok(s.includes(guard));writeFileSync(path,s.replace(guard,'this.flow.create();'));
+ const {ProblemService:Broken}=await import(pathToFileURL(path));await assert.rejects(openScenario(t,Broken),/opening must keep the selected job/);
+});

@@ -2,11 +2,11 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <title>onejob</title><link rel="stylesheet" href="../../ui/palette.css"><link rel="stylesheet" href="focus.css"></head>
-<body>
+<body data-step="connect">
 <header class="f-header"><div class="f-brand"><span class="f-mark">1</span> ONEJOB</div><div><button id="notes-toggle" class="f-quiet" hidden>Working notes</button><button id="settings" class="f-quiet">Connect your AI <span>↗</span></button></div></header>
 <main class="f-layout" id="layout">
 <section class="f-conversation">
-<div class="f-hero"><div class="f-orb-stage"><button class="orb-btn" id="orb" title="Start voice input" aria-label="Start voice input">
+<div class="f-hero"><div class="f-orb-stage"><button class="orb-btn" id="orb" disabled title="Start voice input" aria-label="Start voice input">
 
         <span class="orb notify">
           <span class="orb-body">
@@ -34,14 +34,13 @@
 
           <span class="burst"></span>
         </span>
-      </button></div><div class="f-eyebrow" id="eyebrow">ONE THING. YOUR FULL ATTENTION.</div><h1 id="headline">What’s the one thing<br>you want to change?</h1><p id="subhead">Start wherever you are. We’ll work out the next step together.</p></div>
+      </button></div><div class="f-eyebrow" id="eyebrow">1 / 4 · CONNECT</div><h1 id="headline">First, connect your AI.</h1><p id="subhead">Bring the AI you already use.</p></div>
 <p id="voice-status" class="f-status" role="status"></p>
-<section id="connect-step" class="f-step" hidden><label class="f-provider-label">Your AI<select id="connect-provider"><option value="chatgpt">ChatGPT · Codex</option><option value="claude">Claude Code</option></select></label><button id="connect-model" class="f-primary">Continue with ChatGPT</button><p class="f-fine">Sign in through your AI’s official app. Your password stays there.</p></section>
-<section id="empty-step" class="f-step" hidden><button id="new-job" class="f-primary">Create a onejob</button></section>
+<section id="connect-step" class="f-step"><label class="f-provider-label">Your AI<select id="connect-provider"><option value="chatgpt">ChatGPT · Codex</option><option value="claude">Claude Code</option></select></label><button id="connect-model" class="f-primary">Continue with ChatGPT</button><p class="f-fine">Sign in through your AI’s official app. Your password stays there.</p></section>
 <section id="research-step" class="f-step" hidden><div id="research-browser" hidden><p>Let onejob find context in the websites you already use.</p><div id="browser-slot"></div><button id="skip-browser" class="f-quiet">Use only the context I’ve provided</button></div><p id="research-progress" role="status">Looking for useful context…</p><p class="f-fine">Review any browser requests as they appear. You can leave this window open while onejob works.</p><button id="research-stop" class="f-quiet">Stop research</button></section>
 <section id="plan-step" class="f-step" hidden><div id="plan-text" class="f-plan"></div><button id="accept-plan" class="f-primary">Work on this plan</button><button id="revise-plan" class="f-quiet">Change the problem</button></section>
 <div id="conversation" class="f-messages" aria-live="polite"></div>
-<div class="f-compose-area" id="compose-area"><form id="composer" class="f-composer"><textarea id="message" rows="2" maxlength="16000" aria-label="Your message" placeholder="The thing on my mind is…"></textarea><div class="f-compose-bar"><button type="button" id="mic" class="f-quiet">◉ Speak</button><button type="button" id="stop" class="f-quiet" hidden>Stop answer</button><button type="submit" id="send" class="f-primary">Start here <span>↑</span></button></div></form><p class="f-fine" id="send-note">Your first problem brief is saved on this Mac.</p></div>
+<div class="f-compose-area" id="compose-area" hidden><form id="composer" class="f-composer"><textarea id="message" rows="2" maxlength="16000" aria-label="Your message" placeholder="The thing on my mind is…"></textarea><div class="f-compose-bar"><button type="button" id="mic" class="f-quiet">◉ Speak</button><button type="button" id="stop" class="f-quiet" hidden>Stop answer</button><button type="submit" id="send" class="f-primary">Start here <span>↑</span></button></div></form><p class="f-fine" id="send-note">Your first problem brief is saved on this Mac.</p></div>
 </section>
 <aside class="f-notebook" id="notebook" hidden><div class="f-notebook-top"><span class="f-eyebrow">YOUR WORKING NOTES</span><span class="f-local">● On this Mac</span></div><div class="f-tabs" role="tablist"><button class="selected" role="tab" aria-selected="true" data-tab="brief">Brief</button><button role="tab" aria-selected="false" data-tab="memory">Memory</button><button role="tab" aria-selected="false" data-tab="context">Context</button><button role="tab" aria-selected="false" data-tab="tools">Tools</button></div>
 <section id="brief-pane" class="f-pane"><div id="brief-empty" class="f-empty"><span class="f-paper-icon">↳</span><h2>A place to make sense of it.</h2><p>Your goal, what’s getting in the way, and the next step. Always here when you return.</p><div id="archives"></div></div><form id="brief-form" hidden><p class="f-fine">Edit these notes as your understanding changes.</p><label>What would better look like?<textarea name="outcome" rows="2" maxlength="4000" placeholder="A concrete outcome…"></textarea></label><label>Why it matters<textarea name="why" rows="2" maxlength="4000"></textarea></label><label>Constraints<textarea name="constraints" rows="2" maxlength="4000" placeholder="Time, energy, commitments…"></textarea></label><label>What you’ve tried<textarea name="tried" rows="2" maxlength="4000"></textarea></label><label>Next step<textarea name="nextStep" rows="2" maxlength="4000"></textarea></label><label>The question to resolve<textarea name="openQuestion" rows="2" maxlength="4000"></textarea></label><button class="f-primary" type="submit">Save brief</button><button class="f-quiet" id="archive" type="button">Archive this problem</button></form></section>

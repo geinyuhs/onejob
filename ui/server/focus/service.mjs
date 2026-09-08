@@ -14,6 +14,9 @@ export class ProblemService {
   }
   async call(method,p={}) {
     switch(method) {
+      case 'openJob':
+        if(!this.store.active())this.flow.create();
+        return this.snapshot();
       case 'voiceStatus': return this.transcription.status();
       case 'importVoiceKey': return this.transcription.importKey(p.path);
       case 'transcribe': return this.transcription.transcribe(p.audio);

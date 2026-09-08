@@ -85,7 +85,7 @@ test('browser-first setup detects one profile without requesting per-service con
 test('onboarding connects the model before exposing the problem composer',async()=>{
  const f=await fixture(source,{onboarding:{stage:'connect',draft:'',plan:''}});
  assert.equal(f.get('connect-step').hidden,false);assert.equal(f.get('compose-area').hidden,true);assert.equal(f.get('orb').disabled,true);
- const pending=f.get('connect-model').onclick();assert.equal(f.posts.at(-1).method,'modelStatus');await f.respond({connected:true});assert.equal(f.posts.at(-1).method,'modelReady');
+ const pending=f.get('connect-model').onclick();assert.equal(f.posts.at(-1).method,'openJob');await f.respond(f.state);assert.equal(f.posts.at(-1).method,'modelStatus');await f.respond({connected:true});assert.equal(f.posts.at(-1).method,'modelReady');
  await f.respond({...f.state,onboarding:{stage:'problem',draft:'',plan:''}});await pending;
  assert.equal(f.get('connect-step').hidden,true);assert.equal(f.get('compose-area').hidden,false);assert.equal(f.get('send').firstChild.textContent,'Research my problem ');
 });
@@ -104,4 +104,12 @@ test('dictation appends to typed words; a completed plan does not execute itself
  f.window.focusReceive({event:'jobSelected',state:{...f.state,onboarding:{stage:'plan',draft:'',plan:'<script>synthetic</script>'}}});
  assert.equal(f.get('plan-text').textContent,'<script>synthetic</script>');assert.ok(!f.posts.some(p=>p.method==='acceptPlan'));
  f.get('accept-plan').onclick();assert.equal(f.posts.at(-1).method,'acceptPlan');
+});
+
+test('opening goes straight to model connection without a redundant create page',async()=>{
+ const f=await fixture(source,{onboarding:{stage:'connect',draft:'',plan:''}});
+ assert.equal(f.posts[0].method,'openJob');assert.equal(f.get('connect-step').hidden,false);
+ assert.equal(f.get('headline').textContent,'First, connect your AI.');
+ const html=readFileSync(new URL('../focus/ui/index.html',import.meta.url),'utf8');
+ assert.doesNotMatch(html,/empty-step|Create a onejob|One problem\. A place to solve it/);
 });
