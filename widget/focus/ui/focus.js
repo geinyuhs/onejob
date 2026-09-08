@@ -47,7 +47,7 @@
     $('send-note').textContent=s.problem?`Sending shares this problem, recent conversation, and relevant notes or folder excerpts with ${s.provider==='claude'?'your Claude Code client':'OpenAI through Codex'}. External tool actions require your review.`:'Your first problem brief is saved on this Mac.';
     $('provider').value=s.provider;providerView();
     if(s.problem){$('headline').textContent=s.problem.title;for(const [key,value]of Object.entries(s.problem.brief)){$('brief-form').elements.namedItem(key).value=value;}}
-    else {$('headline').replaceChildren(node('span','What’s the one thing'),node('br'),node('span','you want to change?'));}
+    else {$('headline').textContent='whats my one job?';}
     const messages=s.entries.filter(e=>['user','assistant'].includes(e.kind));
     $('conversation').replaceChildren(...messages.map(e=>{const el=node('div',undefined,'f-message '+e.kind);el.append(node('span',e.kind==='user'?'You':'onejob','f-speaker'),document.createTextNode(e.text));return el;}));
     $('conversation').scrollTop=$('conversation').scrollHeight;
@@ -168,7 +168,7 @@
     $('conversation').hidden=step!=='work';$('notes-toggle').hidden=!['work','plan'].includes(step);
     if(!['work','plan'].includes(step))$('notebook').hidden=true;
     $('layout').classList.toggle('with-notes',!$('notebook').hidden);
-    const titles={connect:'bring your own AI',problem:'What’s the one thing you want to change?',research:'Let’s understand the whole picture.',plan:'A way forward.'};
+    const titles={connect:'bring your own AI',problem:'whats my one job?',research:'Let’s understand the whole picture.',plan:'A way forward.'};
     if(titles[step])$('headline').textContent=titles[step];
     $('subhead').textContent=({connect:'',problem:'',research:'Finding the context that could change the plan.',plan:'Read it through. We’ll take it one step at a time.',work:''})[step];
     updateSend();

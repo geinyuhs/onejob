@@ -55,3 +55,7 @@ body[data-step="problem"] .f-compose-area{margin-top:0}
 body[data-step="problem"] .f-messages:empty{display:none}
 
 #send:disabled{background:#40433e;color:#92958d;opacity:1;cursor:default}
+
+.f-problem-orb{display:none}
+body[data-step="problem"] .f-problem-orb{display:grid;place-items:center;height:148px;margin-bottom:12px}
+.f-problem-orb .orb{width:42px;height:42px;scale:2.75}
