@@ -18,8 +18,8 @@ cat > "$app_path/Contents/Info.plist" <<'PLIST'
 <key>CFBundleExecutable</key><string>Onejob</string>
 <key>CFBundleIdentifier</key><string>app.onejob.desktop</string>
 <key>CFBundleName</key><string>onejob</string>
-<key>CFBundleVersion</key><string>7</string>
-<key>CFBundleShortVersionString</key><string>0.4.2</string>
+<key>CFBundleVersion</key><string>8</string>
+<key>CFBundleShortVersionString</key><string>0.4.3</string>
 <key>LSMinimumSystemVersion</key><string>14.0</string>
 <key>NSServices</key><array><dict><key>NSMenuItem</key><dict><key>default</key><string>New onejob</string></dict><key>NSMessage</key><string>newOnejobService</string><key>NSPortName</key><string>onejob</string></dict></array>
 <key>NSHighResolutionCapable</key><true/>

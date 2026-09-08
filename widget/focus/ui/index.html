@@ -6,9 +6,9 @@
 <header class="f-header"><div><button id="notes-toggle" class="f-quiet" hidden>Working notes</button><button id="settings" class="f-quiet">Connect your AI <span>↗</span></button></div></header>
 <main class="f-layout" id="layout">
 <section class="f-conversation">
-<div class="f-hero"><h1 id="headline">First, connect your AI.</h1><p id="subhead"></p></div>
+<div class="f-hero"><h1 id="headline">bring your own AI</h1><p id="subhead"></p></div>
 <p id="voice-status" class="f-status" role="status"></p>
-<section id="connect-step" class="f-step"><label class="f-provider-label">Your AI<select id="connect-provider"><option value="chatgpt">ChatGPT · Codex</option><option value="claude">Claude Code</option></select></label><button id="connect-model" class="f-primary">Continue with ChatGPT</button></section>
+<section id="connect-step" class="f-step"><div class="f-provider-logos" role="group" aria-label="Choose your AI"><button type="button" id="choose-chatgpt" class="f-provider-logo" aria-label="ChatGPT" title="ChatGPT" aria-pressed="true"><img src="logos/openai.svg" alt="" width="44" height="44"></button><button type="button" id="choose-claude" class="f-provider-logo" aria-label="Claude" title="Claude" aria-pressed="false"><img src="logos/claude.svg" alt="" width="44" height="44"></button></div><button id="connect-model" class="f-primary">Continue with ChatGPT</button></section>
 <section id="research-step" class="f-step" hidden><div id="research-browser" hidden><p>Let onejob find context in the websites you already use.</p><div id="browser-slot"></div><button id="skip-browser" class="f-quiet">Use only the context I’ve provided</button></div><p id="research-progress" role="status">Looking for useful context…</p><p class="f-fine">Review any browser requests as they appear. You can leave this window open while onejob works.</p><button id="research-stop" class="f-quiet">Stop research</button></section>
 <section id="plan-step" class="f-step" hidden><div id="plan-text" class="f-plan"></div><button id="accept-plan" class="f-primary">Work on this plan</button><button id="revise-plan" class="f-quiet">Change the problem</button></section>
 <div id="conversation" class="f-messages" aria-live="polite"></div>

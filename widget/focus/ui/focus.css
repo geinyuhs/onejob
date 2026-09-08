@@ -35,3 +35,9 @@ body[data-step="connect"] .f-conversation{min-height:100vh;justify-content:cente
 body[data-step="connect"] .f-hero{margin:0 0 28px}
 body[data-step="connect"] h1{margin:0}
 .f-hero p:empty{display:none}
+
+.f-provider-logos{display:flex;justify-content:center;gap:18px;margin:6px auto 16px}
+.f-provider-logo{display:grid;place-items:center;width:92px;height:92px;border:1px solid #ffffff24;border-radius:18px;background:#ffffff03;transition:background .15s,border-color .15s}
+.f-provider-logo:hover{background:#ffffff09;border-color:#ffffff50}
+.f-provider-logo[aria-pressed="true"]{background:#d7e3b40c;border:2px solid var(--f-accent)}
+.f-provider-logo img{display:block;width:44px;height:44px}

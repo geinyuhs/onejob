@@ -128,16 +128,17 @@
     $('conversation').hidden=step!=='work';$('notes-toggle').hidden=!['work','plan'].includes(step);
     if(!['work','plan'].includes(step))$('notebook').hidden=true;
     $('layout').classList.toggle('with-notes',!$('notebook').hidden);
-    const titles={connect:'First, connect your AI.',problem:'What’s the one thing you want to change?',research:'Let’s understand the whole picture.',plan:'A way forward.'};
+    const titles={connect:'bring your own AI',problem:'What’s the one thing you want to change?',research:'Let’s understand the whole picture.',plan:'A way forward.'};
     if(titles[step])$('headline').textContent=titles[step];
     $('subhead').textContent=({connect:'',problem:'Write it out or talk it through. Messy is fine.',research:'Finding the context that could change the plan.',plan:'Read it through. We’ll take it one step at a time.',work:''})[step];
     $('send').firstChild.textContent=step==='problem'?'Research my problem ':'Send ';
     $('send-note').textContent=step==='problem'?'Your words and relevant context go to your chosen AI.':$('send-note').textContent;
-    $('connect-provider').value=state.provider;
+    for(const provider of ['chatgpt','claude'])$('choose-'+provider).setAttribute('aria-pressed',String(provider===state.provider));
+    $('connect-model').textContent=state.provider==='claude'?'Continue with Claude':'Continue with ChatGPT';
     $('plan-text').textContent=state.onboarding?.plan||'';
   }
   $('notes-toggle').onclick=()=>{$('notebook').hidden=!$('notebook').hidden;$('layout').classList.toggle('with-notes',!$('notebook').hidden);};
-  $('connect-provider').onchange=()=>act('provider',{provider:$('connect-provider').value}).then(s=>{render(s);$('connect-model').textContent=s.provider==='claude'?'Continue with Claude':'Continue with ChatGPT';}).catch(error);
+  for(const provider of ['chatgpt','claude'])$('choose-'+provider).onclick=()=>act('provider',{provider}).then(render).catch(error);
   $('connect-model').onclick=async()=>{
     const button=$('connect-model');button.disabled=true;
     try {render(await act('openJob'));const account=await act('modelStatus');

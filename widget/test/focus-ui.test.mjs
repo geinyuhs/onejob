@@ -109,7 +109,11 @@ test('dictation appends to typed words; a completed plan does not execute itself
 test('opening goes straight to model connection without a redundant create page',async()=>{
  const f=await fixture(source,{onboarding:{stage:'connect',draft:'',plan:''}});
  assert.equal(f.posts[0].method,'openJob');assert.equal(f.get('connect-step').hidden,false);
- assert.equal(f.get('headline').textContent,'First, connect your AI.');
+ assert.equal(f.get('headline').textContent,'bring your own AI');
+ f.get('choose-claude').onclick();assert.equal(f.posts.at(-1).method,'provider');assert.equal(f.posts.at(-1).params.provider,'claude');
+ await f.respond({...f.state,provider:'claude'});assert.equal(f.get('connect-model').textContent,'Continue with Claude');
+ f.get('choose-chatgpt').onclick();assert.equal(f.posts.at(-1).params.provider,'chatgpt');
+ await f.respond(f.state);assert.equal(f.get('connect-model').textContent,'Continue with ChatGPT');
  const html=readFileSync(new URL('../focus/ui/index.html',import.meta.url),'utf8');
  assert.doesNotMatch(html,/empty-step|Create a onejob|One problem\. A place to solve it/);
 });
