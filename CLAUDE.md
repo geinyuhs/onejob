@@ -1,3 +1,46 @@
+## onejob onboarding update — 2026-09-07
+
+The user requested multiple independent jobs, left-edge desktop orbs and a focused
+connect → describe → research → plan flow. The selected job alone supplies model
+context. User-submitted brain dumps explicitly start research through the existing
+reviewed tool loop. No background research on launch or job switching.
+The user requested accurate dictation. Optional OpenAI gpt-transcribe receives only
+user-recorded audio, directly, using a separate API key explicitly imported from a
+private 0600 file into this app’s Keychain. Never reuse subscription credentials.
+No other transcription processor is authorized by default. macOS on-device speech
+remains the fallback when OpenAI dictation is not configured.
+
+## onejob fork — 2026-09-05
+
+The user requested browser-first setup: detect Aside and its local profiles, reuse
+website sessions, and keep separate service connectors optional. The user confirms
+one browser profile; login/MFA stays in the browser. Optional Notion/Linear OAuth
+uses the official MCP SDK, pinned service origins and local callbacks. OAuth
+credentials belong in macOS Keychain, never SQLite, logs, or model context.
+
+The user also requested automatic Desktop folders. onejob creates Desktop/onejob
+and a separate folder per problem, then indexes only that problem’s folder.
+Previously selected folders remain connected. Never index the Desktop itself.
+
+The user requested a separate voice-first app built around one active problem.
+`widget/focus/` and `ui/server/focus/` are that app. The inherited local-only
+claims below describe the original Intaglio app, not this separate target.
+onejob sends its active problem, recent conversation, and relevant
+user-added notes and selected-folder excerpts through the explicitly selected official Codex or Claude Code
+client when the user presses Send. It never imports the inherited corpus.
+Credentials remain owned by those clients. Codex uses an independent profile;
+Claude Code uses its own native sign-in. No credential copying or symlinks, no
+background inference, or hidden provider-native tools. The user authorized
+reviewed account actions through direct APIs, MCP, and Aside. onejob owns the
+tool loop: external operations require approval of their destination and data.
+1Password supplies configured credentials to the executor, outside model context.
+No Docker or hosted integration broker is required. API/MCP operators receive
+approved requests; Aside and websites retain their own networking policies.
+User-selected folders may be indexed and refreshed locally every 30 seconds.
+Reuse the local file readers, SQLite FTS5, and macOS NaturalLanguage; no hosted
+memory or embedding services. The embedding helper must deny network access.
+See `widget/focus/README.md` for the exact boundary and provider terms.
+
 # CLAUDE.md
 
 Rules for working in this repository. Read this before the code.

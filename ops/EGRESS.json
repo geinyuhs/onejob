@@ -1,4 +1,25 @@
 {
+  "_onejob_hermes_execution_preview": {
+    "decision": "User approved continuing the Hermes/Astra migration after a fresh ChatGPT sign-in, then approved isolated resumable Hermes agents per job.",
+    "component": "ui/server/focus/hermes-client.mjs",
+    "providers": ["auth.openai.com", "chatgpt.com"],
+    "purpose": "Active continuing-job engine using the pinned Nous Hermes AIAgent for ChatGPT execution/work. Selected job context, its saved local memory/history and checked tool results reach Astra through Hermes-owned ChatGPT OAuth. No hosted memory service.",
+    "boundary": "Explicit default ChatGPT execution switch approved by the user. No API billing, model/provider fallback, inherited corpus, native shell/browser tools, cross-job recall, background review or auxiliary compression model. Execution profiles and SQLite history are isolated per job/context version; evidence revocation rotates the version. Old profiles remain on disk but are not loaded. Clarification/review stay stateless. Shared fresh OAuth is refreshed by Hermes, never copied. External actions use the existing onejob ToolRuntime and its approvals; stored history grants no permission. No automatic resume or scheduler. Setup, public research and review deliberately remain on the existing Astra client. Hermes invokes that same hosted search through public.search; only its topical query is sent, not the full job context. The filesystem sandbox is not a network-host allowlist."
+  },
+  "_onejob_hermes_preflight": {
+    "decision": "User approved a Hermes migration and chose fresh ChatGPT login on 2026-09-09; separately billed API access and token imports are not authorized.",
+    "component": "ui/server/focus/hermes-login.mjs",
+    "providers": ["auth.openai.com", "chatgpt.com"],
+    "purpose": "Opt-in login preflight through an explicitly installed Nous Research Hermes Agent. Hermes, not onejob, performs the device-code exchange and stores the new OAuth session.",
+    "boundary": "No inference, account actions, new vault access, or production engine switch in this preflight. The separate macOS login process strips ambient secrets and denies access to existing provider credential directories. This is not the sandbox for future agent execution."
+  },
+  "_onejob_public_research": {
+    "decision": "User requested automatic public research without personal-browser setup on 2026-09-08.",
+    "component": "ui/server/focus/clients.mjs",
+    "providers": ["chatgpt.com", "api.openai.com", "api.anthropic.com", "claude.ai"],
+    "purpose": "Provider-hosted web search during research and explicitly started plan execution through the selected official client. Queries and public results are processed by the provider and its search infrastructure; the host list does not enumerate provider-internal downstream fetches.",
+    "boundary": "No personal cookies or browser profile. Codex hosted search may open public pages; Claude only gets WebSearch, not WebFetch. Other native tools remain off. Queries are instructed to omit private details, not deterministically redacted. Signed-in actions remain separately reviewed."
+  },
   "_readme": [
     "THE EGRESS LEDGER. Every host this repo can reach is enumerated here, and",
     "here ONLY. This file exists because the same claim used to be written out",
@@ -61,9 +82,14 @@
     "model-asset": "model or vendor asset download",
     "user-browser-link": "NOT this program's egress -- a link handed to the owner's own browser",
     "website": "a host the public marketing site in site/ reaches: a subresource the visitor's browser loads, or a link it hands them. Not the product's egress -- no daemon opens these",
-    "loopback": "never leaves the machine"
+    "loopback": "never leaves the machine",
+    "frontier-client": "The installed, unmodified provider client owns its networking and credentials; this is a provider boundary, not an exhaustive inventory of its internal hosts.",
+    "dependency-registry": "Pinned JavaScript package downloads at source build time only."
   },
   "_the_claim": [
+    "2026-09-05 fork exception: the original Intaglio claims below exclude onejob. On Send, the separate app passes active-problem context to official Codex or Claude Code. No inherited corpus is read. Selected-folder indexing stays local, using existing readers, SQLite FTS5, and a network-denied macOS embedding helper. No hosted memory or embedding service is used. Provider clients own their full network host inventory; the root hosts below identify that boundary.",
+    "onejob browser-first setup detects installed clients and local Aside profile IDs without reading pages. Optional Notion/Linear OAuth uses the official MCP SDK and each service origin directly for discovery, dynamic client registration and token exchange/refresh. The callback listens on a random 127.0.0.1 port for one state-bound response. OAuth credentials are local non-synchronizing Keychain items. No integration broker or Docker is required. Browser sign-in pages retain their own service networking; this is not an inventory of their redirects or subresources.",
+    "2026-09-10 onejob tool boundary: the user authorized direct APIs, MCP and Aside, without Docker. User-configured origins cannot be enumerated by this literal-host scanner. The executor pins API/MCP origins. Connected-browser opens, reads and scrolling need no per-action approval; other view-only browser controls need an isolated model review with the full scrubbed snapshot and focused target context. Current execution is research only: account changes, messages, API/MCP and scheduling remain unavailable, including in Auto. Outside research, scoped action handling retains the existing review rules. Auto never opens an app approval dialog and does not start interactive 1Password desktop authorization. Auto off asks before configured credential retrieval. This model classification is a heuristic, not proof of website effects. Aside controls job-owned task tabs; websites, subresources, redirects, sync and telemetry remain governed by Aside and user settings. Connect Aside does not change those settings or audit Aside traffic. Configured credentials reach the executor and the bound sign-in origin through a private transient local file, never model messages. Masked browser images may reach Astra through Hermes; local text matching hides fields, frames and known credential text without passing credential values into webpage JavaScript. Secrets rendered in canvas/images are not guaranteed detectable. The official 1Password SDK, Aside and destination websites retain their own networking and data-handling policies. These are explicit boundaries, not a claim of zero third-party egress.",
     "The narrow claim this system actually keeps, stated once:",
     "HAZLIE SENDS NO CORPUS TEXT TO A CLOUD MODEL. All reasoning and narration",
     "happen locally, on loopback llama-server instances.",
@@ -464,6 +490,16 @@
       "evidence": "widget/src/Bridge.swift allowedExternal https://www.notion.so/my-integrations"
     },
     {
+      "host": "developers.google.com",
+      "kind": "website",
+      "component": "site/privacy/index.html",
+      "direction": "outbound-link",
+      "purpose": "Google API Services User Data Policy linked from the privacy page",
+      "credential": "none supplied by this app",
+      "decision": "Preserves the policy link already on main. Only the visitor's browser follows it when clicked; this does not authorize a new app API call or transfer job data.",
+      "evidence": "site/privacy/index.html links to /terms/api-services-user-data-policy"
+    },
+    {
       "host": "fonts.googleapis.com",
       "kind": "website",
       "component": "site/index.html",
@@ -622,6 +658,86 @@
       "credential": "none of ours -- the owner is signing in to Meta in a window whose cookies are harvested for the bridge; nothing is sent to this host that Meta did not put in the page",
       "decision": "SUBFRAME ONLY, and that distinction is the whole point: fbsbx.com is deliberately absent from allowedHosts, so the window can never NAVIGATE here \u2014 the main frame is where a password is typed. Measured 2026-08-30 as \"blocked-subframe Messenger www.fbsbx.com\", after which the 2FA page sat with a 2.5MB DOM rendering nothing; five theories were spent on that blank page, including a wrong conclusion that Meta refuses embedded webviews outright, before the fence itself was instrumented.",
       "evidence": "connect/lib/bridge.mjs webLogin.allowedFrameHosts for messenger and instagram; ~/.hazlie/logs/bridge-login.log blocked-subframe"
+    },
+    {
+      "host": "auth.openai.com",
+      "kind": "frontier-client",
+      "component": "ui/server/focus/clients.mjs; widget/focus/App.swift",
+      "direction": "user-initiated",
+      "purpose": "Official provider authentication and inference for the separate onejob app",
+      "credential": "Owned by unmodified provider clients; not read by onejob",
+      "decision": "User requested Claude/OpenAI account connection on 2026-09-05. ChatGPT uses documented managed app-server authentication in a separate profile. Claude Code is invoked locally with user-owned native authentication, subject to applicable provider terms. No token extraction, account pooling, or automated background usage.",
+      "evidence": "widget/focus/README.md"
+    },
+    {
+      "host": "chatgpt.com",
+      "kind": "frontier-client",
+      "component": "ui/server/focus/clients.mjs; widget/focus/App.swift",
+      "direction": "user-initiated",
+      "purpose": "Official provider authentication and inference for the separate onejob app",
+      "credential": "Owned by unmodified provider clients; not read by onejob",
+      "decision": "User requested Claude/OpenAI account connection on 2026-09-05. ChatGPT uses documented managed app-server authentication in a separate profile. Claude Code is invoked locally with user-owned native authentication, subject to applicable provider terms. No token extraction, account pooling, or automated background usage.",
+      "evidence": "widget/focus/README.md"
+    },
+    {
+      "host": "api.openai.com",
+      "kind": "frontier-client",
+      "component": "ui/server/focus/clients.mjs; widget/focus/App.swift; ui/server/focus/transcription.mjs",
+      "direction": "user-initiated",
+      "purpose": "Official provider authentication and inference for the separate onejob app; optional direct OpenAI dictation",
+      "credential": "Owned by unmodified provider clients; not read by onejob; dictation uses a separately imported OpenAI API key in macOS Keychain",
+      "decision": "User requested Claude/OpenAI account connection on 2026-09-05. ChatGPT uses documented managed app-server authentication in a separate profile. Claude Code is invoked locally with user-owned native authentication, subject to applicable provider terms. No token extraction, account pooling, or automated background usage. The user requested accurate voice dictation on 2026-09-07. gpt-transcribe receives only explicitly recorded audio using separate API billing, never subscription credentials.",
+      "evidence": "widget/focus/README.md"
+    },
+    {
+      "host": "api.anthropic.com",
+      "kind": "frontier-client",
+      "component": "ui/server/focus/clients.mjs; widget/focus/App.swift",
+      "direction": "user-initiated",
+      "purpose": "Official provider authentication and inference for the separate onejob app",
+      "credential": "Owned by unmodified provider clients; not read by onejob",
+      "decision": "User requested Claude/OpenAI account connection on 2026-09-05. ChatGPT uses documented managed app-server authentication in a separate profile. Claude Code is invoked locally with user-owned native authentication, subject to applicable provider terms. No token extraction, account pooling, or automated background usage.",
+      "evidence": "widget/focus/README.md"
+    },
+    {
+      "host": "claude.ai",
+      "kind": "frontier-client",
+      "component": "ui/server/focus/clients.mjs; widget/focus/App.swift",
+      "direction": "user-initiated",
+      "purpose": "Official provider authentication and inference for the separate onejob app",
+      "credential": "Owned by unmodified provider clients; not read by onejob",
+      "decision": "User requested Claude/OpenAI account connection on 2026-09-05. ChatGPT uses documented managed app-server authentication in a separate profile. Claude Code is invoked locally with user-owned native authentication, subject to applicable provider terms. No token extraction, account pooling, or automated background usage.",
+      "evidence": "widget/focus/README.md"
+    },
+    {
+      "host": "registry.npmjs.org",
+      "kind": "dependency-registry",
+      "component": "ui/server/focus/package-lock.json",
+      "direction": "inbound-fetch",
+      "purpose": "Install pinned official MCP and 1Password SDKs and dependencies for the native onejob runtime",
+      "credential": "none",
+      "decision": "User requested reuse of existing tools without Docker; dependency installation is a source build step.",
+      "evidence": "ui/server/focus/package-lock.json"
+    },
+    {
+      "host": "mcp.notion.com",
+      "kind": "api",
+      "component": "ui/server/focus/tools/presets.mjs",
+      "direction": "bidirectional",
+      "purpose": "Notion first-party OAuth discovery, registration, sign-in, refresh, and approved MCP operations",
+      "credential": "OAuth tokens in macOS Keychain; supplied to executor outside model context",
+      "decision": "User requested automatic setup and optional direct connections; sign-in and workspace permissions require the user in the service browser flow. Browser access is the default.",
+      "evidence": "ui/server/focus/tools/oauth.mjs and widget/focus/Policy.swift"
+    },
+    {
+      "host": "mcp.linear.app",
+      "kind": "api",
+      "component": "ui/server/focus/tools/presets.mjs",
+      "direction": "bidirectional",
+      "purpose": "Linear first-party OAuth discovery, registration, sign-in, refresh, and approved MCP operations",
+      "credential": "OAuth tokens in macOS Keychain; supplied to executor outside model context",
+      "decision": "User requested automatic setup and optional direct connections; sign-in and workspace permissions require the user in the service browser flow. Browser access is the default.",
+      "evidence": "ui/server/focus/tools/oauth.mjs and widget/focus/Policy.swift"
     }
   ],
   "_loopback": [
